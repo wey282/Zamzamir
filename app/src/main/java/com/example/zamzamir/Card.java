@@ -2,6 +2,8 @@ package com.example.zamzamir;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Point;
 
 import java.util.ArrayList;
@@ -10,6 +12,8 @@ import java.util.List;
 public class Card extends Point {
 	public static final List<Card> deck = new ArrayList<>();
 	private static final List<Card> cards = new ArrayList<>();
+
+	private static Paint borderPaint;
 
 	public static final int WIDTH = 156, HEIGHT = 220;
 
@@ -23,6 +27,8 @@ public class Card extends Point {
 	private int defenceValue;
 
 	private int owner = -1;
+	/** The value of @owner for which the card is in the deck*/
+	public static final int DECK = -1;
 
 	public Card(Bitmap sprite, int attackValue, int defenceValue) {
 		this.fullSprite = sprite;
@@ -35,6 +41,7 @@ public class Card extends Point {
 
 	/** Draws the card on the screen.*/
 	public void draw(Canvas canvas) {
+		canvas.drawRect(x, y, x + WIDTH, y + HEIGHT, borderPaint);
 		canvas.drawBitmap(revealed ? sprite : back, x, y, null);
 	}
 
@@ -80,5 +87,14 @@ public class Card extends Point {
 
 	public int getOwner() {
 		return owner;
+	}
+
+	/** Creates a paint use to draw the border of a card */
+	public static void createBorderPaint(int borderColor) {
+		borderPaint = new Paint();
+		borderPaint.setColor(borderColor);
+		borderPaint.setStrokeWidth(20);
+		borderPaint.setStyle(Paint.Style.STROKE);
+		borderPaint.setStrokeJoin(Paint.Join.ROUND);
 	}
 }

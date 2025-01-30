@@ -1,6 +1,7 @@
 package com.example.zamzamir;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -10,6 +11,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -32,6 +34,9 @@ public class GameView extends View {
 	private Paint highlightPaint;
 	private Paint confirmedPaint;
 	private Paint targetedPaint;
+
+	private Button skipButton;
+	private Button attackButton;
 
 	public GameView(Context context) {
 		super(context);
@@ -57,14 +62,14 @@ public class GameView extends View {
 		highlightPaint.setStyle(Paint.Style.STROKE);
 		highlightPaint.setStrokeJoin(Paint.Join.ROUND);
 		highlightPaint.setStrokeWidth(40);
-		highlightPaint.setColor(ContextCompat.getColor(getContext(), R.color.highlight));
+		highlightPaint.setColor(getColor(R.color.highlight));
 
 		confirmedPaint = new Paint(highlightPaint);
 		confirmedPaint.setStrokeWidth(50);
-		confirmedPaint.setColor(ContextCompat.getColor(getContext(), R.color.confirmed));
+		confirmedPaint.setColor(getColor(R.color.confirmed));
 
 		targetedPaint = new Paint(confirmedPaint);
-		targetedPaint.setColor(ContextCompat.getColor(getContext(), R.color.targeted));
+		targetedPaint.setColor(getColor(R.color.targeted));
 	}
 
 	private boolean onTouch(View view, MotionEvent event) {
@@ -72,7 +77,7 @@ public class GameView extends View {
 		if (currentPlayer == player) {
 			if (event.getAction() == MotionEvent.ACTION_DOWN) {
 				Card card = Card.checkTouchForAllCards(event.getX(), event.getY());
-				if (card != null) {
+				if (card != null && card.getOwner() != Card.DECK) {
 					if (card.getOwner() == player) {
 						if (card == selectedCard)
 							confirmedCard = card;
@@ -89,18 +94,23 @@ public class GameView extends View {
 		return true;
 	}
 
-	public void start(int playerCount, int player)
+	public void start(int playerCount, int player, Button skipButton, Button attackButton)
 	{
 		players = new ArrayList<>();
 		for (int i = 0; i < playerCount; i++) {
 			players.add(new ArrayList<>());
 		}
 		this.player = player;
+
+		this.skipButton = skipButton;
+		this.attackButton = attackButton;
+
 		dealCards();
 	}
 
 	/** Deals cards to all players, 2 hidden, one revealed */
 	private void dealCards() {
+		Card lowest = null;
 		for (int i = 0; i < players.size(); i++) {
 			List<Card> player = players.get(i);
 			// deal 1 hidden card
@@ -112,11 +122,40 @@ public class GameView extends View {
 			card.setRevealed(true);
 			card.setOwner(i);
 			player.add(card);
+			// check if current card is the lowest defense value, and if so make that player start
+			if (lowest == null || lowest.getDefenceValue() > card.getDefenceValue()) {
+				lowest = card;
+				currentPlayer = i;
+			}
+
 			// deal 1 hidden card
 			card = Card.deck.remove(0);
 			card.setOwner(i);
 			player.add(card);
 		}
+		if (currentPlayer == player)
+			enableButtons();
+		else
+			disableButtons();
+	}
+
+	/** Disables the buttons and colors them accordingly*/
+	private void disableButtons() {
+		ColorStateList disabledColor = ColorStateList.valueOf(getColor(R.color.disabled_button));
+		skipButton.setEnabled(false);
+		skipButton.setBackgroundTintList(disabledColor);
+		attackButton.setEnabled(false);
+		attackButton.setBackgroundTintList(disabledColor);
+	}
+
+	/** Enables the buttons and colors them accordingly*/
+	private void enableButtons() {
+		ColorStateList skipColor = ColorStateList.valueOf(getColor(R.color.skip_button));
+		skipButton.setEnabled(true);
+		skipButton.setBackgroundTintList(skipColor);
+		ColorStateList attackColor = ColorStateList.valueOf(getColor(R.color.attack_button));
+		attackButton.setEnabled(true);
+		attackButton.setBackgroundTintList(attackColor);
 	}
 
 
@@ -141,13 +180,18 @@ public class GameView extends View {
 			double angle = Math.PI*2*i/players.size()+Math.PI/2;
 			for (int j = 0; j < player.size(); j++) {
 				Card card = player.get(j);
-				card.x = cx + (int)(Math.cos(angle)*Card.HEIGHT*1.66) + (int)((j - (double)player.size() /2 + 0.5) * Card.WIDTH * 1.5);
-				card.y = cy + (int)(Math.sin(angle)*Card.HEIGHT*1.66);
+				card.x = cx + (int)(Math.cos(angle)*Card.HEIGHT*1.6) + (int)((j - (double)player.size() /2 + 0.5) * Card.WIDTH * 1.5);
+				card.y = cy + (int)(Math.sin(angle)*Card.HEIGHT*1.6);
 				card.draw(canvas);
 			}
 		}
 		if (selectedCard != null) {
 			canvas.drawBitmap(selectedCard.getFullSprite(), 0, 0, null);
 		}
+	}
+
+	/** Returns the static color with given id*/
+	public int getColor(int id) {
+		return ContextCompat.getColor(getContext(), id);
 	}
 }

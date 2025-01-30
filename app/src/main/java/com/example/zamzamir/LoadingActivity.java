@@ -4,14 +4,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.TypedValue;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 
@@ -23,8 +20,6 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import org.xmlpull.v1.XmlPullParser;
-
-import java.util.List;
 
 public class LoadingActivity extends AppCompatActivity {
 
@@ -54,7 +49,8 @@ public class LoadingActivity extends AppCompatActivity {
 	private void startLoading() {
 		Card.back = BitmapFactory.decodeResource(getResources(), R.drawable.back);
 		Card.back = Bitmap.createScaledBitmap(Card.back, Card.WIDTH, Card.HEIGHT, false);
-		new Thread(() -> loadCards(this, () -> moveActivity(MainActivity.class))).start();
+		Card.createBorderPaint(ContextCompat.getColor(this, R.color.border));
+		new Thread(() -> loadCards(this, () -> moveActivity(GameActivity.class))).start();
 	}
 
 	private void moveActivity(Class<? extends Activity> activity) {
