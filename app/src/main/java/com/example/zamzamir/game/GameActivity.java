@@ -1,4 +1,4 @@
-package com.example.zamzamir;
+package com.example.zamzamir.game;
 
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
@@ -9,6 +9,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.zamzamir.R;
+import com.example.zamzamir.StaticUtils;
 
 public class GameActivity extends AppCompatActivity {
 
@@ -29,7 +32,7 @@ public class GameActivity extends AppCompatActivity {
 			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 			return insets;
 		});
-		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		StaticUtils.setOrientationToHorizontal(this);
 
 		findButtons();
 

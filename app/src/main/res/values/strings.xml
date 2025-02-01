@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">Zamzamir</string>
+    <string name="user_collection">Users</string>
+    <string name="waiting_room">WaitingRoom</string>
+    <string name="full">full</string>
+    <string name="sign_up">Sign up</string>
+    <string name="players_in_room">Players</string>
+    <string name="unready">Unready</string>
+    <string name="ready">Ready</string>
+    <string name="room_id_extra">roomID</string>
 </resources>

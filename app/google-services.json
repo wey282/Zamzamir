@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1025244148466",
+    "project_id": "zamzamir-a724d",
+    "storage_bucket": "zamzamir-a724d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1025244148466:android:cf2b740ee485fca54c966b",
+        "android_client_info": {
+          "package_name": "com.example.zamzamir"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXVbX26Xh2HBCBZOeFMrppOUjTTV7LpGg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

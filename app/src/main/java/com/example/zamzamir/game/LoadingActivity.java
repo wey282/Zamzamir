@@ -1,8 +1,6 @@
-package com.example.zamzamir;
+package com.example.zamzamir.game;
 
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.XmlResourceParser;
 import android.graphics.Bitmap;
@@ -18,6 +16,10 @@ import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.zamzamir.R;
+import com.example.zamzamir.authentication.SignInActivity;
+import com.example.zamzamir.StaticUtils;
 
 import org.xmlpull.v1.XmlPullParser;
 
@@ -39,7 +41,8 @@ public class LoadingActivity extends AppCompatActivity {
 			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 			return insets;
 		});
-		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		StaticUtils.setOrientationToHorizontal(this);
+
 		progressBar = findViewById(R.id.progressBar2);
 		progressBar.setMax(cardCount);
 		imageView = findViewById(R.id.imageView);
@@ -50,11 +53,7 @@ public class LoadingActivity extends AppCompatActivity {
 		Card.back = BitmapFactory.decodeResource(getResources(), R.drawable.back);
 		Card.back = Bitmap.createScaledBitmap(Card.back, Card.WIDTH, Card.HEIGHT, false);
 		Card.createBorderPaint(ContextCompat.getColor(this, R.color.border));
-		new Thread(() -> loadCards(this, () -> moveActivity(GameActivity.class))).start();
-	}
-
-	private void moveActivity(Class<? extends Activity> activity) {
-		startActivity(new Intent(this, activity));
+		new Thread(() -> loadCards(this, () -> StaticUtils.moveActivity(this, SignInActivity.class))).start();
 	}
 
 	/** Loads all the cards from cards.xml to the deck */

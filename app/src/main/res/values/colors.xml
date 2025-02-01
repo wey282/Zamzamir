@@ -8,6 +8,7 @@
     <color name="border">#FF230444</color>
     <color name="skip_button">#FF9D4CCF</color>
     <color name="attack_button">#FFD14D4D</color>
+    <color name="enabled_button">#FF55E755</color>
     <color name="disabled_button">#FFB7B7B7</color>
 
 </resources>

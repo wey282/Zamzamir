@@ -1,21 +1,19 @@
-package com.example.zamzamir;
+package com.example.zamzamir.game;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
-import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+
+import com.example.zamzamir.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -190,7 +188,7 @@ public class GameView extends View {
 		}
 	}
 
-	/** Returns the static color with given id*/
+	/** Returns the static color with given id. */
 	public int getColor(int id) {
 		return ContextCompat.getColor(getContext(), id);
 	}
