@@ -26,10 +26,13 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
 public class WaitingRoomActivity extends AppCompatActivity {
+
+	private static final int UNINITIALIZED_VALUE = -1;
 
 	private final FirebaseFirestore DB = FirebaseFirestore.getInstance();
 	private DocumentReference roomDocument;
@@ -46,6 +49,9 @@ public class WaitingRoomActivity extends AppCompatActivity {
 	private Room room;
 
 	private int playerCount;
+
+	// Which is the player is the current user
+	private int player = UNINITIALIZED_VALUE;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -116,6 +122,10 @@ public class WaitingRoomActivity extends AppCompatActivity {
 			return;
 		List<GameUser> players = playersSnapshot.toObjects(GameUser.class);
 		playerCount = players.size();
+
+		if (player == UNINITIALIZED_VALUE)
+			player = playerCount - 1;
+
 		if (players.size() == 1) {
 			host = true;
 			readyButton.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.disabled_button)));
@@ -160,8 +170,13 @@ public class WaitingRoomActivity extends AppCompatActivity {
 			game.set(new GameRoom(playerCount));
 		}
 
+		// Create relevant extras
+		HashMap<String, String> extras = new HashMap<>();
+		extras.put(getString(R.string.room_id_extra), roomDocument.getId());
+		extras.put(getString(R.string.current_player_extra), Integer.toString(player));
+
 		// Start game activity
-		StaticUtils.moveActivity(this, GameActivity.class, getString(R.string.room_id_extra), roomDocument.getId());
+		StaticUtils.moveActivity(this, GameActivity.class, extras);
 
 		// Delete waiting room, only needs to be done once
 		if (host)

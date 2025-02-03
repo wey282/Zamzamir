@@ -14,6 +14,7 @@ import com.example.zamzamir.game.Card;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 /** Houses static general use methods */
@@ -27,6 +28,13 @@ public class StaticUtils {
 	public static void moveActivity(Context from, Class<? extends Activity> to, String extraName, String extraValue) {
 		Intent intent = new Intent(from, to);
 		intent.putExtra(extraName, extraValue);
+		from.startActivity(intent);
+	}
+
+	/** Moves from @from to @to, with given extras. */
+	public static void moveActivity(Context from, Class<? extends Activity> to, Map<String, String> extras) {
+		Intent intent = new Intent(from, to);
+		extras.forEach(intent::putExtra);
 		from.startActivity(intent);
 	}
 

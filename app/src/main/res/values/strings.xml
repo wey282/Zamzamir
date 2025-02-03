@@ -9,4 +9,5 @@
     <string name="unready_text">Unready</string>
     <string name="ready_text">Ready</string>
     <string name="room_id_extra">roomID</string>
+    <string name="current_player_extra">player</string>
 </resources>

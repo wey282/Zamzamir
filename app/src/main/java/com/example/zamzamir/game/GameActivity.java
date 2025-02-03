@@ -11,15 +11,23 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.zamzamir.MainActivity;
 import com.example.zamzamir.R;
 import com.example.zamzamir.StaticUtils;
+import com.example.zamzamir.authentication.GameUser;
 import com.example.zamzamir.match_making.GameRoom;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.List;
 
 public class GameActivity extends AppCompatActivity {
+
+	private final FirebaseAuth AUTH = FirebaseAuth.getInstance();
 
 	private final FirebaseFirestore DB = FirebaseFirestore.getInstance();
 	private DocumentReference game;
@@ -29,8 +37,7 @@ public class GameActivity extends AppCompatActivity {
 	private Button skipButton;
 	private Button attackButton;
 
-	private int player = 0;
-	private int playerCount = 2;
+	private int player;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -48,8 +55,12 @@ public class GameActivity extends AppCompatActivity {
 
 		String roomID = getIntent().getStringExtra(getString(R.string.room_id_extra));
 
+		player = Integer.parseInt(getIntent().getStringExtra(getString(R.string.current_player_extra)));
+
 		if (roomID == null)
 			throw new RuntimeException();
+
+
 
 		game = DB.collection(getString(R.string.games_collection)).document(roomID);
 		game.get().addOnSuccessListener(this::start);
@@ -68,8 +79,9 @@ public class GameActivity extends AppCompatActivity {
 		gameView = findViewById(R.id.gameView);
 	}
 
-	private void start(DocumentSnapshot game) {
-		GameRoom gameRoom = game.toObject(GameRoom.class);
+	/** Starts the game. */
+	private void start(DocumentSnapshot gameSnapshot) {
+		GameRoom gameRoom = gameSnapshot.toObject(GameRoom.class);
 
 		if (gameRoom == null)
 			return;
