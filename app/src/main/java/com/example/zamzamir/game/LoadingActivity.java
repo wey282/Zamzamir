@@ -28,7 +28,7 @@ public class LoadingActivity extends AppCompatActivity {
 	private ProgressBar progressBar;
 	private ImageView imageView;
 
-	private int cardCount = 52;
+	private int cardCount;
 	private int loadedCards = 0;
 
 	@Override
@@ -44,8 +44,8 @@ public class LoadingActivity extends AppCompatActivity {
 		StaticUtils.setOrientationToHorizontal(this);
 
 		progressBar = findViewById(R.id.progressBar2);
-		progressBar.setMax(cardCount);
 		imageView = findViewById(R.id.imageView);
+
 		startLoading();
 	}
 
@@ -53,6 +53,9 @@ public class LoadingActivity extends AppCompatActivity {
 		Card.back = BitmapFactory.decodeResource(getResources(), R.drawable.back);
 		Card.back = Bitmap.createScaledBitmap(Card.back, Card.WIDTH, Card.HEIGHT, false);
 		Card.createBorderPaint(ContextCompat.getColor(this, R.color.border));
+
+		cardCount = StaticUtils.countCards(this);
+
 		new Thread(() -> loadCards(this, () -> StaticUtils.moveActivity(this, SignInActivity.class))).start();
 	}
 
@@ -71,8 +74,16 @@ public class LoadingActivity extends AppCompatActivity {
 
 					// decode the resource into a bitmap
 					Bitmap bitmap = BitmapFactory.decodeResource(context.getResources(), drawableResId);
+
+					loadedCards++;
+
 					// Process card data
 					new Card(bitmap, attack, defence);
+
+					progressBar.post(() -> {
+						progressBar.setMax(cardCount);
+						progressBar.setProgress(loadedCards);
+					});
 				}
 			}
 			parser.close();

@@ -2,6 +2,7 @@ package com.example.zamzamir.game;
 
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Button;
 
 import androidx.activity.EdgeToEdge;
@@ -12,8 +13,17 @@ import androidx.core.view.WindowInsetsCompat;
 
 import com.example.zamzamir.R;
 import com.example.zamzamir.StaticUtils;
+import com.example.zamzamir.match_making.GameRoom;
+import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
 
 public class GameActivity extends AppCompatActivity {
+
+	private final FirebaseFirestore DB = FirebaseFirestore.getInstance();
+	private DocumentReference game;
+	private DocumentReference lastMove;
 
 	private GameView gameView;
 	private Button skipButton;
@@ -36,6 +46,14 @@ public class GameActivity extends AppCompatActivity {
 
 		findButtons();
 
+		String roomID = getIntent().getStringExtra(getString(R.string.room_id_extra));
+
+		if (roomID == null)
+			throw new RuntimeException();
+
+		game = DB.collection(getString(R.string.games_collection)).document(roomID);
+		game.get().addOnSuccessListener(this::start);
+
 		initGameView();
 	}
 
@@ -48,8 +66,15 @@ public class GameActivity extends AppCompatActivity {
 	/** Finds the game-view and starts it. */
 	private void initGameView() {
 		gameView = findViewById(R.id.gameView);
-		gameView.start(playerCount, player, skipButton, attackButton);
 	}
 
+	private void start(DocumentSnapshot game) {
+		GameRoom gameRoom = game.toObject(GameRoom.class);
 
+		if (gameRoom == null)
+			return;
+
+		Card.shuffle(gameRoom.getShuffle());
+		gameView.start(gameRoom.getPlayerCount(), player, skipButton, attackButton);
+	}
 }

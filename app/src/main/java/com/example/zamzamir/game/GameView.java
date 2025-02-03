@@ -36,6 +36,8 @@ public class GameView extends View {
 	private Button skipButton;
 	private Button attackButton;
 
+	private boolean started = false;
+
 	public GameView(Context context) {
 		super(context);
 		init();
@@ -104,6 +106,10 @@ public class GameView extends View {
 		this.attackButton = attackButton;
 
 		dealCards();
+
+		started = true;
+
+		invalidate();
 	}
 
 	/** Deals cards to all players, 2 hidden, one revealed */
@@ -160,6 +166,8 @@ public class GameView extends View {
 	@Override
 	public void draw(@NonNull Canvas canvas) {
 		super.draw(canvas);
+		if (!started)
+			return;
 		int cx = getWidth()/2 - Card.WIDTH/2, cy = getHeight()/2 - Card.HEIGHT/2;
 		for (Card card: Card.deck) {
 			card.x = cx;

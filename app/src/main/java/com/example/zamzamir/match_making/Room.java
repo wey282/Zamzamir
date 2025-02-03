@@ -14,9 +14,11 @@ public class Room {
 		this.full = full;
 	}
 
-	public boolean isFull() {
+	public boolean getFull() {
 		return full;
 	}
 
-
+	public int getReady() {
+		return ready;
+	}
 }

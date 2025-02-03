@@ -64,7 +64,7 @@ public class Card extends Point {
 		owner = player;
 	}
 
-
+	/** Checks whether x,y is inside a card */
 	public static Card checkTouchForAllCards(float x, float y) {
 		for (Card card: cards) {
 			if (x > card.x && card.x + WIDTH  > x
@@ -74,6 +74,7 @@ public class Card extends Point {
 		return null;
 	}
 
+	/** Checks whether point x,y is inside a card known to given player. */
 	public static Card checkTouchForKnownCards(float x, float y, int player) {
 		for (Card card: cards) {
 			if (x > card.x && card.x + WIDTH  > x
@@ -82,6 +83,12 @@ public class Card extends Point {
 				return card;
 		}
 		return null;
+	}
+
+	/** Puts back all cards in the deck in order. */
+	public static void resetDeck() {
+		deck.clear();
+		deck.addAll(cards);
 	}
 
 	public int getOwner() {
@@ -95,5 +102,13 @@ public class Card extends Point {
 		borderPaint.setStrokeWidth(20);
 		borderPaint.setStyle(Paint.Style.STROKE);
 		borderPaint.setStrokeJoin(Paint.Join.ROUND);
+	}
+
+	/** Shuffles deck according to given shuffle template. */
+	public static void shuffle(List<Integer> shuffle) {
+		deck.clear();
+		for (int i : shuffle) {
+			deck.add(cards.get(i));
+		}
 	}
 }

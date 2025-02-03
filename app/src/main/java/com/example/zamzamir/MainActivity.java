@@ -1,6 +1,5 @@
 package com.example.zamzamir;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
@@ -15,13 +14,11 @@ import com.example.zamzamir.authentication.GameUser;
 import com.example.zamzamir.match_making.Room;
 import com.example.zamzamir.match_making.WaitingRoomActivity;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.AggregateSource;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.firestore.Source;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -66,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
 		if (AUTH.getUid() != null)
 			USER_COLLECTION.document(AUTH.getUid()).get().addOnSuccessListener(this::onGetUser);
 
-		WAITING_ROOM = DB.collection(getString(R.string.waiting_room));
+		WAITING_ROOM = DB.collection(getString(R.string.waiting_room_collection));
 	}
 
 	/** Finds a waiting room, or creates one if none are available, and then joins it. */
@@ -81,6 +78,7 @@ public class MainActivity extends AppCompatActivity {
 					return;
 				}
 			}
+			Log.d("banana", "findRoom: ");
 			// After not finding a room, create one and join it.
 			WAITING_ROOM.add(new Room(false)).addOnSuccessListener(snapshot -> snapshot.get().addOnSuccessListener(this::joinRoom));
 		});
@@ -90,6 +88,8 @@ public class MainActivity extends AppCompatActivity {
 	private void joinRoom(DocumentSnapshot room) {
 		DocumentReference roomReference = room.getReference();
 		CollectionReference playerInRoom = roomReference.collection(getString(R.string.players_in_room));
+
+		Log.d("banana", "joinRoom: " + user.getId());
 
 		playerInRoom.document(user.getId()).set(user).addOnCompleteListener(task -> {
 			if (task.isSuccessful()) {

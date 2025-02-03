@@ -1,13 +1,14 @@
 package com.example.zamzamir.match_making;
 
+import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -15,6 +16,8 @@ import androidx.core.view.WindowInsetsCompat;
 import com.example.zamzamir.R;
 import com.example.zamzamir.StaticUtils;
 import com.example.zamzamir.authentication.GameUser;
+import com.example.zamzamir.game.GameActivity;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -24,11 +27,13 @@ import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.List;
+import java.util.Objects;
 
 public class WaitingRoomActivity extends AppCompatActivity {
 
 	private final FirebaseFirestore DB = FirebaseFirestore.getInstance();
 	private DocumentReference roomDocument;
+	private CollectionReference playersReference;
 	private ListenerRegistration roomListener;
 	private ListenerRegistration playersListener;
 
@@ -36,8 +41,11 @@ public class WaitingRoomActivity extends AppCompatActivity {
 	private Button readyButton;
 
 	private boolean ready = false;
+	private boolean host = false;
 
 	private Room room;
+
+	private int playerCount;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -57,11 +65,13 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
 		String roomID = getIntent().getStringExtra(getString(R.string.room_id_extra));
 		assert roomID != null;
-		roomDocument = DB.collection(getString(R.string.waiting_room)).document(roomID);
+		roomDocument = DB.collection(getString(R.string.waiting_room_collection)).document(roomID);
 		// Listen for changes in the room
 		roomListener = roomDocument.addSnapshotListener(this::onRoomChange);
 		// Listen for changes in the players
-		playersListener = roomDocument.collection(getString(R.string.players_in_room)).addSnapshotListener(this::onPlayerChange);
+		playersReference = roomDocument.collection(getString(R.string.players_in_room));
+		playersListener = playersReference.addSnapshotListener(this::onPlayerChange);
+
 	}
 
 	/** Finds all relevant views in the activity and assigns the correct variables value. */
@@ -80,23 +90,41 @@ public class WaitingRoomActivity extends AppCompatActivity {
 	private void onReady(View view) {
 		ready = !ready;
 		if (ready) {
-			readyButton.setText(R.string.unready);
+			readyButton.setText(R.string.unready_text);
 			room.ready++;
 		}
 		else {
-			readyButton.setText(R.string.ready);
+			readyButton.setText(R.string.ready_text);
 			room.ready--;
 		}
 		roomDocument.set(room);
 	}
 
+	/** Updates room object and starts the game if enough players are ready. */
 	private void onRoomChange(DocumentSnapshot room, FirebaseFirestoreException exception) {
-		if (room != null)
+		if (room != null) {
 			this.room = room.toObject(Room.class);
+			int readyCount = this.room != null ? this.room.ready : 0;
+			if (readyCount == playerCount && playerCount > 1) {
+				startGame();
+			}
+		}
 	}
 
 	private void onPlayerChange(QuerySnapshot playersSnapshot, FirebaseFirestoreException exception) {
+		if (playersSnapshot == null)
+			return;
 		List<GameUser> players = playersSnapshot.toObjects(GameUser.class);
+		playerCount = players.size();
+		if (players.size() == 1) {
+			host = true;
+			readyButton.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.disabled_button)));
+			readyButton.setEnabled(false);
+		}
+		else {
+			readyButton.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.enabled_button)));
+			readyButton.setEnabled(true);
+		}
 		for (int i = 0; i < 4; i++) {
 			if (players.size()-1 < i)
 				playersTextViews[i].setText("");
@@ -107,8 +135,39 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
 	@Override
 	protected void onDestroy() {
-		roomListener.remove();
-		playersListener.remove();
+		if (isFinishing()) {
+			roomListener.remove();
+			playersListener.remove();
+			if (room != null && ready) {
+				room.ready--;
+				roomDocument.set(room);
+			}
+			playersReference.document(Objects.requireNonNull(FirebaseAuth.getInstance().getUid())).delete();
+			if (playerCount == 1) {
+				roomDocument.delete();
+			}
+		}
 		super.onDestroy();
+	}
+
+	/** Starts the game. */
+	private void startGame() {
+		Log.d("banana", "startGame: ");
+		// Create game room
+		CollectionReference games = DB.collection(getString(R.string.games_collection));
+		DocumentReference game = games.document(roomDocument.getId());
+		if (host) {
+			game.set(new GameRoom(playerCount));
+		}
+
+		// Start game activity
+		StaticUtils.moveActivity(this, GameActivity.class, getString(R.string.room_id_extra), roomDocument.getId());
+
+		// Delete waiting room, only needs to be done once
+		if (host)
+			roomDocument.delete();
+
+		// Stop this activity
+		finish();
 	}
 }
