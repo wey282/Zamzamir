@@ -183,7 +183,7 @@ public class GameView extends View {
 			canvas.drawRect(targetCard.x, targetCard.y, targetCard.x + Card.WIDTH, targetCard.y + Card.HEIGHT, targetedPaint);
 		for (int i = 0; i < players.size(); i++) {
 			List<Card> player = players.get(i);
-			double angle = Math.PI*2*i/players.size()+Math.PI/2;
+			double angle = Math.PI*2*(i-this.player)/players.size()+Math.PI/2;
 			for (int j = 0; j < player.size(); j++) {
 				Card card = player.get(j);
 				card.x = cx + (int)(Math.cos(angle)*Card.HEIGHT*1.6) + (int)((j - (double)player.size() /2 + 0.5) * Card.WIDTH * 1.5);
