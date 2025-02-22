@@ -63,7 +63,6 @@ public class WaitingRoomActivity extends AppCompatActivity {
 			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 			return insets;
 		});
-		StaticUtils.setOrientationToHorizontal(this);
 
 		findViews();
 
@@ -144,20 +143,24 @@ public class WaitingRoomActivity extends AppCompatActivity {
 	}
 
 	@Override
-	protected void onDestroy() {
-		if (isFinishing()) {
+	protected void onStop() {
+		Log.d("banana", "onStop: ");
+		if (!isChangingConfigurations()) {
 			roomListener.remove();
 			playersListener.remove();
 			if (room != null && ready) {
 				room.ready--;
 				roomDocument.set(room);
 			}
-			playersReference.document(Objects.requireNonNull(FirebaseAuth.getInstance().getUid())).delete();
-			if (playerCount == 1) {
+			Log.d("banana", "onStop: " + playerCount);
+			playersReference.document(Objects.requireNonNull(FirebaseAuth.getInstance().getUid())).delete()
+					.addOnSuccessListener(v -> Log.d("banana", "onStop: successful delete"))
+					.addOnFailureListener(e -> Log.d("banana", "onStop: failed delete: \n" + e.getMessage() + "\n" + e.getCause()));
+			if (playerCount <= 1) {
 				roomDocument.delete();
 			}
 		}
-		super.onDestroy();
+		super.onStop();
 	}
 
 	/** Starts the game. */
@@ -178,9 +181,11 @@ public class WaitingRoomActivity extends AppCompatActivity {
 		// Start game activity
 		StaticUtils.moveActivity(this, GameActivity.class, extras);
 
+		playersReference.document(FirebaseAuth.getInstance().getUid()).delete();
 		// Delete waiting room, only needs to be done once
-		if (host)
+		if (host) {
 			roomDocument.delete();
+		}
 
 		// Stop this activity
 		finish();

@@ -4,14 +4,13 @@
     <card id="1" name="hauett" type="bilding" attack="1" defence="5" image="@drawable/card_hauett" bleed="false" luck="false"/>
     <card id="2" name="couttej" type="bilding" attack="2" defence="6" image="@drawable/card_couttej" bleed="false" luck="false"/>
     <card id="3" name="haeuss" type="bilding" attack="3" defence="7" image="@drawable/card_haeuss" bleed="false" luck="false"/>
-    <card id="4" name="haeuss" type="bilding" attack="3" defence="7" image="@drawable/card_haeuss" bleed="false" luck="false"/>
-    <card id="5" name="breejh" type="bilding" attack="4" defence="8" image="@drawable/card_breejh" bleed="false" luck="false"/>
-    <card id="6" name="taeuer" type="bilding" attack="5" defence="9" image="@drawable/card_taeuer" bleed="false" luck="false"/>
-    <card id="7" name="phourtrece" type="bilding" attack="6" defence="10" image="@drawable/card_phourtrece" bleed="false" luck="false"/>
-    <card id="8" name="caethidrael" type="bilding" attack="7" defence="11" image="@drawable/card_caethidrael" bleed="false" luck="false"/>
-    <card id="9" name="caessel" type="bilding" attack="8" defence="12" image="@drawable/card_caessel" bleed="true" luck="false"/>
-    <card id="10" name="skicekraipr" type="bilding" attack="9" defence="13" image="@drawable/card_skicekraipr" bleed="true" luck="false"/>
-    <card id="11" name="piraemed" type="bilding" attack="10" defence="14" image="@drawable/card_piraemed" bleed="true" luck="false"/>
+    <card id="4" name="breejh" type="bilding" attack="4" defence="8" image="@drawable/card_breejh" bleed="false" luck="false"/>
+    <card id="5" name="taeuer" type="bilding" attack="5" defence="9" image="@drawable/card_taeuer" bleed="false" luck="false"/>
+    <card id="6" name="phourtrece" type="bilding" attack="6" defence="10" image="@drawable/card_phourtrece" bleed="false" luck="false"/>
+    <card id="7" name="caethidrael" type="bilding" attack="7" defence="11" image="@drawable/card_caethidrael" bleed="false" luck="false"/>
+    <card id="8" name="caessel" type="bilding" attack="8" defence="12" image="@drawable/card_caessel" bleed="true" luck="false"/>
+    <card id="9" name="skicekraipr" type="bilding" attack="9" defence="13" image="@drawable/card_skicekraipr" bleed="true" luck="false"/>
+    <card id="10" name="piraemed" type="bilding" attack="10" defence="14" image="@drawable/card_piraemed" bleed="true" luck="false"/>
 
 
 </cards>

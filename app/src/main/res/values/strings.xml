@@ -3,6 +3,7 @@
     <string name="user_collection">Users</string>
     <string name="waiting_room_collection">WaitingRoom</string>
     <string name="games_collection">Games</string>
+    <string name="last_turn_collection">Turns</string>
     <string name="full">full</string>
     <string name="sign_up">Sign up</string>
     <string name="players_in_room">Players</string>

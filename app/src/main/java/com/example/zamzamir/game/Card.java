@@ -5,11 +5,14 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 
+import androidx.annotation.NonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class Card extends Point {
 	public static final List<Card> deck = new ArrayList<>();
+	public static final List<Card> discardPile = new ArrayList<>();
 	private static final List<Card> cards = new ArrayList<>();
 
 	private static Paint borderPaint;
@@ -28,6 +31,7 @@ public class Card extends Point {
 	private int owner = -1;
 	/** The value of @owner for which the card is in the deck*/
 	public static final int DECK = -1;
+	public static final int DISCARD_PILE = -2;
 
 	public Card(Bitmap sprite, int attackValue, int defenceValue) {
 		this.fullSprite = sprite;
@@ -79,7 +83,7 @@ public class Card extends Point {
 		for (Card card: cards) {
 			if (x > card.x && card.x + WIDTH  > x
 					&& y > card.y && card.y + HEIGHT > y
-					&& (card.revealed || player == card.owner))
+					&& ((card.revealed && (card.owner != DISCARD_PILE || discardPile.get(0).equals(card))) || player == card.owner))
 				return card;
 		}
 		return null;
@@ -106,9 +110,22 @@ public class Card extends Point {
 
 	/** Shuffles deck according to given shuffle template. */
 	public static void shuffle(List<Integer> shuffle) {
+		discardPile.clear();
 		deck.clear();
 		for (int i : shuffle) {
 			deck.add(cards.get(i));
 		}
+	}
+
+	/** Adds*/
+	public static void discard(Card card) {
+		card.owner = DISCARD_PILE;
+		discardPile.add(0, card);
+	}
+
+	@NonNull
+	@Override
+	public String toString() {
+		return "id: " + cards.indexOf(this) + " Value: " + defenceValue + "/" + attackValue + " Position: " +  super.toString();
 	}
 }

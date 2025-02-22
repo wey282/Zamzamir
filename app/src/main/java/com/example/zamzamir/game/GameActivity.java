@@ -24,6 +24,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class GameActivity extends AppCompatActivity {
 
@@ -31,7 +32,7 @@ public class GameActivity extends AppCompatActivity {
 
 	private final FirebaseFirestore DB = FirebaseFirestore.getInstance();
 	private DocumentReference game;
-	private DocumentReference lastMove;
+	private DocumentReference lastTurn;
 
 	private GameView gameView;
 	private Button skipButton;
@@ -49,7 +50,6 @@ public class GameActivity extends AppCompatActivity {
 			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 			return insets;
 		});
-		StaticUtils.setOrientationToHorizontal(this);
 
 		findButtons();
 
@@ -65,6 +65,8 @@ public class GameActivity extends AppCompatActivity {
 		game = DB.collection(getString(R.string.games_collection)).document(roomID);
 		game.get().addOnSuccessListener(this::start);
 
+		lastTurn = DB.collection(getString(R.string.last_turn_collection)).document(roomID);
+
 		initGameView();
 	}
 
@@ -77,6 +79,7 @@ public class GameActivity extends AppCompatActivity {
 	/** Finds the game-view and starts it. */
 	private void initGameView() {
 		gameView = findViewById(R.id.gameView);
+		lastTurn.addSnapshotListener(gameView::onTurn);
 	}
 
 	/** Starts the game. */
@@ -87,6 +90,6 @@ public class GameActivity extends AppCompatActivity {
 			return;
 
 		Card.shuffle(gameRoom.getShuffle());
-		gameView.start(gameRoom.getPlayerCount(), player, skipButton, attackButton);
+		gameView.start(gameRoom.getPlayerCount(), player, skipButton, attackButton, lastTurn);
 	}
 }

@@ -41,7 +41,6 @@ public class LoadingActivity extends AppCompatActivity {
 			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 			return insets;
 		});
-		StaticUtils.setOrientationToHorizontal(this);
 
 		progressBar = findViewById(R.id.progressBar2);
 		imageView = findViewById(R.id.imageView);
@@ -56,7 +55,10 @@ public class LoadingActivity extends AppCompatActivity {
 
 		cardCount = StaticUtils.countCards(this);
 
-		new Thread(() -> loadCards(this, () -> StaticUtils.moveActivity(this, SignInActivity.class))).start();
+		new Thread(() -> loadCards(this, () -> {
+			StaticUtils.moveActivity(this, SignInActivity.class);
+			finish();
+		})).start();
 	}
 
 	/** Loads all the cards from cards.xml to the deck */
