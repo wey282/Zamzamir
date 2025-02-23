@@ -40,6 +40,7 @@ public class GameView extends View {
 	private Paint highlightPaint;
 	private Paint confirmedPaint;
 	private Paint targetedPaint;
+	private Paint discardPillePaint;
 
 	private Button skipButton;
 	private Button attackButton;
@@ -49,6 +50,8 @@ public class GameView extends View {
 
 	private boolean started = false;
 	private boolean skipped = false;
+
+	private boolean receivingCard = false;
 
 	public GameView(Context context) {
 		super(context);
@@ -82,6 +85,10 @@ public class GameView extends View {
 
 		targetedPaint = new Paint(confirmedPaint);
 		targetedPaint.setColor(getColor(R.color.targeted));
+
+		discardPillePaint = new Paint(targetedPaint);
+		discardPillePaint.setStyle(Paint.Style.FILL_AND_STROKE);
+		discardPillePaint.setStrokeWidth(30);
 	}
 
 	private boolean onTouch(View view, MotionEvent event) {
@@ -104,28 +111,45 @@ public class GameView extends View {
 							enableAttackButton();
 					}
 					deckSelected = false;
+					discardPileSelected = false;
 				}
 				else if (card != null && card.getOwner() == Card.DECK) {
 					if (deckSelected) {
-						drawCard(Turn.FROM_DECK);
+						if (receivingCard)
+							receiveCard(Turn.FROM_DECK);
+						else if (drawnCard == null)
+							drawCard(Turn.FROM_DECK);
+
 						confirmedCard = null;
 					}
 					deckSelected = true;
+					discardPileSelected = false;
 				}
 				else if (card != null && card.getOwner() == Card.DISCARD_PILE) {
+
 					if (discardPileSelected) {
-						drawCard(Turn.FROM_DISCARD_PILE);
+						if (drawnCard != null && drawnCard.getOwner() == Card.DECK)
+							discard();
+						else if (receivingCard)
+							receiveCard(Turn.FROM_DISCARD_PILE);
+						else if (drawnCard == null)
+							drawCard(Turn.FROM_DISCARD_PILE);
 						confirmedCard = null;
 					}
 					discardPileSelected = true;
+					deckSelected = false;
 				}
 				else {
+					if (inDiscardPile(event.getX(), event.getY()) && drawnCard != null && drawnCard.getOwner() == Card.DECK)
+						discard();
 					deckSelected = false;
+					discardPileSelected = false;
 				}
 			}
 		}
 		else {
-
+			deckSelected = false;
+			discardPileSelected = false;
 		}
 		selectedCard = Card.checkTouchForKnownCards(event.getX(), event.getY(), player);
 		invalidate();
@@ -220,6 +244,7 @@ public class GameView extends View {
 		centerCards(cx, cy);
 
 		// draw borders
+		canvas.drawRect(cx + (int)(Card.WIDTH*0.6), cy, cx + (int)(Card.WIDTH*0.6)+Card.WIDTH, cy+Card.HEIGHT, discardPillePaint);
 		if (selectedCard != null)
 			canvas.drawRect(selectedCard.x, selectedCard.y, selectedCard.x + Card.WIDTH, selectedCard.y + Card.HEIGHT, highlightPaint);
 		if (confirmedCard != null)
@@ -234,6 +259,7 @@ public class GameView extends View {
 		// draw discard pile
 		if (!Card.discardPile.isEmpty())
 			Card.discardPile.get(0).draw(canvas);
+
 
 		// draw player's cards
 		for (int i = 0; i < players.size(); i++) {
@@ -293,9 +319,23 @@ public class GameView extends View {
 		invalidate();
 	}
 
-	/** Switch drawn card with w=one of player's cards. */
+	/** Switch drawn card with one of player's cards. */
 	private void switchCard(int owner) {
 		Turn turn = Turn.drawTurn(player, players.get(player).indexOf(confirmedCard), owner == Card.DECK ? Turn.FROM_DECK : Turn.FROM_DISCARD_PILE);
+		drawnCard = null;
+		lastTurnReference.set(turn);
+		showButtons();
+	}
+
+	/** Receive card from given pile. */
+	private void receiveCard(int from) {
+		Turn turn = Turn.receiveTurn(player, from);
+		lastTurnReference.set(turn);
+	}
+
+	/** Discard drawn card. */
+	private void discard() {
+		Turn turn = Turn.discardTurn(player);
 		drawnCard = null;
 		lastTurnReference.set(turn);
 		showButtons();
@@ -337,6 +377,9 @@ public class GameView extends View {
 					Card.discard(players.get(turn.getPlayer()).remove(turn.getSelectedCard()));
 				Toast.makeText(getContext(), "Atk: " + turn.getAttackerRoll() + ", Def: " + turn.getDefenderRoll(), Toast.LENGTH_LONG).show();
 				break;
+			case Turn.DISCARD:
+				Card.discard(Card.deck.remove(0));
+				break;
 		}
 
 		turnEnd();
@@ -366,6 +409,7 @@ public class GameView extends View {
 	}
 
 	private void receiveCard() {
+		receivingCard = true;
 	}
 
 	/** Returns the static color with given id. */
@@ -383,4 +427,11 @@ public class GameView extends View {
 		attackButton.setVisibility(VISIBLE);
 	}
 
+	/** Returns whether the given point is inside the discard pile. */
+	private boolean inDiscardPile(float x, float y) {
+		return x < getWidth()/2f + Card.WIDTH*1.1
+			&& x > getWidth()/2f + Card.WIDTH*0.1
+			&& y > getHeight()/2f - Card.HEIGHT/2f
+			&& y < getHeight()/2f + Card.HEIGHT/2f;
+	}
 }

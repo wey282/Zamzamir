@@ -10,6 +10,7 @@ public class Turn {
 	public static final int ATTACK = 1;
 	public static final int SKIP = 2;
 	public static final int RECEIVE = 3;
+	public static final int DISCARD = 4;
 
 	public static final int FROM_DECK = 0;
 	public static final int FROM_DISCARD_PILE = 1;
@@ -48,12 +49,21 @@ public class Turn {
 		return turn;
 	}
 
+	/** Create a turn consisting of drawing a card. */
 	public static Turn drawTurn(int player, int selectedCard, int from) {
 		Turn turn = new Turn();
 		turn.player = player;
 		turn.selectedCard = selectedCard;
 		turn.from = from;
 		turn.type = DRAW;
+		return turn;
+	}
+
+	/** Creates a turn where a player drew a card and decided to discard it. */
+	public static Turn discardTurn(int player) {
+		Turn turn = new Turn();
+		turn.player = player;
+		turn.type = DISCARD;
 		return turn;
 	}
 
