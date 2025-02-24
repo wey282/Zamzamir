@@ -1,8 +1,6 @@
 package com.example.zamzamir.game;
 
-import android.content.pm.ActivityInfo;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.Button;
 
 import androidx.activity.EdgeToEdge;
@@ -11,20 +9,12 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.zamzamir.MainActivity;
 import com.example.zamzamir.R;
-import com.example.zamzamir.StaticUtils;
-import com.example.zamzamir.authentication.GameUser;
 import com.example.zamzamir.match_making.GameRoom;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QuerySnapshot;
-
-import java.util.List;
-import java.util.function.Consumer;
 
 public class GameActivity extends AppCompatActivity {
 
@@ -79,7 +69,7 @@ public class GameActivity extends AppCompatActivity {
 	/** Finds the game-view and starts it. */
 	private void initGameView() {
 		gameView = findViewById(R.id.gameView);
-		lastTurn.addSnapshotListener(gameView::onTurn);
+		lastTurn.addSnapshotListener((documentSnapshot, exception) -> gameView.onTurn(documentSnapshot));
 	}
 
 	/** Starts the game. */
@@ -90,6 +80,10 @@ public class GameActivity extends AppCompatActivity {
 			return;
 
 		Card.shuffle(gameRoom.getShuffle());
-		gameView.start(gameRoom.getPlayerCount(), player, skipButton, attackButton, lastTurn);
+		gameView.start(gameRoom.getPlayerCount(), player, skipButton, attackButton, lastTurn, this::showGameEndScreen);
+	}
+
+	private void showGameEndScreen(int rank) {
+		new EndScreenDialog(this, rank, this::finish).show();
 	}
 }

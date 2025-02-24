@@ -6,6 +6,7 @@ import androidx.annotation.VisibleForTesting;
 
 public class Turn {
 
+	public static final int EMPTY = -1;
 	public static final int DRAW = 0;
 	public static final int ATTACK = 1;
 	public static final int SKIP = 2;
@@ -24,15 +25,15 @@ public class Turn {
 	private int attackerRoll;
 	private int defenderRoll;
 
-	/** Create empty turn */
-	public static Turn emptyTurn(int player, int type) {
+	/** Creates empty turn. */
+	public static Turn emptyTurn(int player) {
 		Turn turn = new Turn();
 		turn.player = player;
-		turn.type = type;
+		turn.type = EMPTY;
 		return turn;
 	}
 
-	/** Create a skip turn. */
+	/** Creates a skip turn. */
 	public static Turn skipTurn(int player) {
 		Turn turn = new Turn();
 		turn.player = player;
@@ -40,7 +41,7 @@ public class Turn {
 		return turn;
 	}
 
-	/** Create a turn consisting of receiving a card. */
+	/** Creates a turn consisting of receiving a card. */
 	public static Turn receiveTurn(int player, int from) {
 		Turn turn = new Turn();
 		turn.player = player;
@@ -49,7 +50,7 @@ public class Turn {
 		return turn;
 	}
 
-	/** Create a turn consisting of drawing a card. */
+	/** Creates a turn consisting of drawing a card. */
 	public static Turn drawTurn(int player, int selectedCard, int from) {
 		Turn turn = new Turn();
 		turn.player = player;
@@ -67,7 +68,7 @@ public class Turn {
 		return turn;
 	}
 
-	/** Create an attack turn. */
+	/** Creates an attack turn. */
 	public static Turn attackTurn(int player, int selectedCard, int targetPlayer, int targetCard) {
 		Turn turn = new Turn();
 		turn.player = player;
@@ -82,7 +83,7 @@ public class Turn {
 
 	/** DO NOT USE
 	 *  Exists for Firebase serialization
-	 *  Use one of these instead: Turn.emptyTurn(), Turn.skipTurn(), Turn.drawTurn(), Turn.attackTurn()
+	 *  Use one of these instead: Turn.emptyTurn(), Turn.skipTurn(), Turn.receiveTurn(), Turn.drawTurn(), Turn.attackTurn()
 	 *  */
 	@VisibleForTesting
 	public Turn() {}

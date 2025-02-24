@@ -5,7 +5,6 @@ import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -18,15 +17,15 @@ import androidx.core.content.ContextCompat;
 import com.example.zamzamir.R;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.FirebaseFirestoreException;
 
 import java.util.ArrayList;
+import java.util.DoubleSummaryStatistics;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class GameView extends View {
 	private DocumentReference lastTurnReference;
 
-	private List<Card> discardPile;
 	private List<List<Card>> players;
 
 	private int currentPlayer = 0;
@@ -53,6 +52,9 @@ public class GameView extends View {
 
 	private boolean receivingCard = false;
 
+	private int rank = 4;
+	private Consumer<Integer> showGameEndScreen;
+
 	public GameView(Context context) {
 		super(context);
 		init();
@@ -69,8 +71,6 @@ public class GameView extends View {
 	}
 
 	private void init() {
-		discardPile = new ArrayList<>();
-
 		setOnTouchListener(this::onTouch);
 
 		highlightPaint = new Paint();
@@ -156,12 +156,14 @@ public class GameView extends View {
 		return true;
 	}
 
-	public void start(int playerCount, int player, Button skipButton, Button attackButton, DocumentReference lastTurnReference)
+	public void start(int playerCount, int player, Button skipButton, Button attackButton, DocumentReference lastTurnReference, Consumer<Integer> showGameEndScreen)
 	{
 		players = new ArrayList<>();
 		for (int i = 0; i < playerCount; i++) {
 			players.add(new ArrayList<>());
 		}
+		rank = playerCount;
+
 		this.player = player;
 
 		this.skipButton = skipButton;
@@ -171,6 +173,8 @@ public class GameView extends View {
 		this.attackButton.setOnClickListener(v -> attack());
 
 		this.lastTurnReference = lastTurnReference;
+
+		this.showGameEndScreen = showGameEndScreen;
 
 		dealCards();
 
@@ -342,7 +346,7 @@ public class GameView extends View {
 	}
 
 	/** Receives turn from other player. */
-	public void onTurn(DocumentSnapshot documentSnapshot, FirebaseFirestoreException exception) {
+	public void onTurn(DocumentSnapshot documentSnapshot) {
 		Turn turn = documentSnapshot.toObject(Turn.class);
 		if (turn != null) {
 			playTurn(turn);
@@ -385,7 +389,11 @@ public class GameView extends View {
 		turnEnd();
 	}
 
+	/** Signals the turn has ended. */
 	private void turnEnd() {
+		if (hasGameEnded()){
+			gameEnd();
+		}
 		currentPlayer++;
 		if (currentPlayer >= players.size())
 			currentPlayer = 0;
@@ -394,7 +402,10 @@ public class GameView extends View {
 		deckSelected = false;
 		discardPileSelected = false;
 		if (player == currentPlayer) {
-			if (skipped) {
+			if (players.get(player).isEmpty()) {
+				noTurn();
+			}
+			else if (skipped) {
 				skipped = false;
 				receiveCard();	
 			}
@@ -406,6 +417,11 @@ public class GameView extends View {
 			disableButtons();
 		}
 		invalidate();
+	}
+
+	private void noTurn() {
+		Turn turn = Turn.emptyTurn(player);
+		lastTurnReference.set(turn);
 	}
 
 	private void receiveCard() {
@@ -433,5 +449,21 @@ public class GameView extends View {
 			&& x > getWidth()/2f + Card.WIDTH*0.1
 			&& y > getHeight()/2f - Card.HEIGHT/2f
 			&& y < getHeight()/2f + Card.HEIGHT/2f;
+	}
+
+	/** Check whether the game has ended and sets the player's rank. */
+	private boolean hasGameEnded() {
+		int playersAlive = players.size();
+		for (List<Card> player: players)
+			if (player.isEmpty())
+				playersAlive--;
+		if (!players.get(player).isEmpty())
+			rank = playersAlive;
+		return playersAlive <= 1;
+	}
+
+	private void gameEnd() {
+		hideButtons();
+		showGameEndScreen.accept(rank);
 	}
 }

@@ -11,4 +11,5 @@
     <string name="ready_text">Ready</string>
     <string name="room_id_extra">roomID</string>
     <string name="current_player_extra">player</string>
+    <string name="game_end_text_for_loser">You were #%1$d place</string>
 </resources>
