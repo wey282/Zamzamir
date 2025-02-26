@@ -1,7 +1,7 @@
 package com.example.zamzamir;
 
+import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -24,7 +24,6 @@ public class MainActivity extends AppCompatActivity {
 
 	private final FirebaseAuth AUTH = FirebaseAuth.getInstance();
 	private final FirebaseFirestore DB = FirebaseFirestore.getInstance();
-	private CollectionReference USER_COLLECTION;
 	private CollectionReference WAITING_ROOM;
 
 	private GameUser user;
@@ -57,7 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
 	/** Initializes all the collection references. */
 	private void initializeCollections() {
-		USER_COLLECTION = DB.collection(getString(R.string.user_collection));
+		CollectionReference USER_COLLECTION = DB.collection(getString(R.string.user_collection));
 
 		if (AUTH.getUid() != null)
 			USER_COLLECTION.document(AUTH.getUid()).get().addOnSuccessListener(this::onGetUser);
@@ -67,28 +66,35 @@ public class MainActivity extends AppCompatActivity {
 
 	/** Finds a waiting room, or creates one if none are available, and then joins it. */
 	private void findRoom() {
+		findRoom(this, WAITING_ROOM, user);
+	}
+
+	/** Finds a waiting room, or creates one if none are available, and then joins it. */
+	public static void findRoom(Context context, CollectionReference WAITING_ROOM, GameUser user) {
 		WAITING_ROOM.get().addOnSuccessListener(querySnapshot -> {
 
 			// Search in all waiting rooms and joins the first non-full room.
 			for (DocumentSnapshot room : querySnapshot) {
-				Boolean full = room.getBoolean(getString(R.string.full));
+				Boolean full = room.getBoolean(context.getString(R.string.full));
 				if (full != null && !full) {
-					joinRoom(room);
+					joinRoom(context, room, user);
 					return;
 				}
 			}
-			Log.d("banana", "findRoom: ");
 			// After not finding a room, create one and join it.
-			WAITING_ROOM.add(new Room(false)).addOnSuccessListener(snapshot -> snapshot.get().addOnSuccessListener(this::joinRoom));
+			WAITING_ROOM.add(new Room(false)).addOnSuccessListener(snapshot -> snapshot.get().addOnSuccessListener(documentSnapshot -> joinRoom(context, documentSnapshot, user)));
 		});
 	}
 
 	/** Joins given waiting room. */
 	private void joinRoom(DocumentSnapshot room) {
-		DocumentReference roomReference = room.getReference();
-		CollectionReference playerInRoom = roomReference.collection(getString(R.string.players_in_room));
+		joinRoom(this, room, user);
+	}
 
-		Log.d("banana", "joinRoom: " + user.getId());
+	/** Joins given waiting room. */
+	public static void joinRoom(Context context, DocumentSnapshot room,  GameUser user) {
+		DocumentReference roomReference = room.getReference();
+		CollectionReference playerInRoom = roomReference.collection(context.getString(R.string.players_in_room));
 
 		playerInRoom.document(user.getId()).set(user).addOnCompleteListener(task -> {
 			if (task.isSuccessful()) {
@@ -101,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
 							roomObj.setFull(true);
 							roomReference.set(roomObj);
 						}
-						StaticUtils.moveActivity(this, WaitingRoomActivity.class, getString(R.string.room_id_extra), room.getId());
+						StaticUtils.moveActivity(context, WaitingRoomActivity.class, context.getString(R.string.room_id_extra), room.getId());
 					}
 				});
 			}

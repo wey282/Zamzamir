@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.XmlResourceParser;
+import android.graphics.PointF;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -87,7 +88,9 @@ public class StaticUtils {
 
 	/** Creates a template for shuffled cards. */
 	public static List<Integer> createShuffle() {
+		Card.resetDeck();
 		int cardCount = Card.deck.size();
+		Log.d("banana", "createShuffle: " + cardCount);
 
 		// Create an array containing indexes from 0 to card count
 		List<Integer> shuffle = new ArrayList<>();
@@ -103,5 +106,9 @@ public class StaticUtils {
 		}
 
 		return shuffle;
+	}
+
+	public static PointF lerp(PointF a, PointF b, float progress) {
+		return new PointF(a.x*(1-progress) + b.x*progress, a.y*(1-progress) + b.y*progress);
 	}
 }

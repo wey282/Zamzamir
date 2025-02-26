@@ -50,6 +50,8 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
 	private int playerCount;
 
+	private boolean started;
+
 	// Which is the player is the current user
 	private int player = UNINITIALIZED_VALUE;
 
@@ -107,7 +109,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
 	/** Updates room object and starts the game if enough players are ready. */
 	private void onRoomChange(DocumentSnapshot room, FirebaseFirestoreException exception) {
-		if (room != null) {
+		if (room != null && !started) {
 			this.room = room.toObject(Room.class);
 			int readyCount = this.room != null ? this.room.ready : 0;
 			if (readyCount == playerCount && playerCount > 1) {
@@ -117,10 +119,13 @@ public class WaitingRoomActivity extends AppCompatActivity {
 	}
 
 	private void onPlayerChange(QuerySnapshot playersSnapshot, FirebaseFirestoreException exception) {
-		if (playersSnapshot == null)
+		if (started && host && playersSnapshot.isEmpty())
+			roomDocument.delete();
+		if (playersSnapshot == null || started)
 			return;
 		List<GameUser> players = playersSnapshot.toObjects(GameUser.class);
 		playerCount = players.size();
+
 
 		if (player == UNINITIALIZED_VALUE)
 			player = playerCount - 1;
@@ -144,18 +149,14 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
 	@Override
 	protected void onStop() {
-		Log.d("banana", "onStop: ");
-		if (!isChangingConfigurations()) {
-			roomListener.remove();
-			playersListener.remove();
+		roomListener.remove();
+		playersListener.remove();
+		if (!isChangingConfigurations() && !started) {
 			if (room != null && ready) {
 				room.ready--;
 				roomDocument.set(room);
 			}
-			Log.d("banana", "onStop: " + playerCount);
-			playersReference.document(Objects.requireNonNull(FirebaseAuth.getInstance().getUid())).delete()
-					.addOnSuccessListener(v -> Log.d("banana", "onStop: successful delete"))
-					.addOnFailureListener(e -> Log.d("banana", "onStop: failed delete: \n" + e.getMessage() + "\n" + e.getCause()));
+			playersReference.document(Objects.requireNonNull(FirebaseAuth.getInstance().getUid())).delete();
 			if (playerCount <= 1) {
 				roomDocument.delete();
 			}
@@ -165,7 +166,7 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
 	/** Starts the game. */
 	private void startGame() {
-		Log.d("banana", "startGame: ");
+		started = true;
 		// Create game room
 		CollectionReference games = DB.collection(getString(R.string.games_collection));
 		DocumentReference game = games.document(roomDocument.getId());
@@ -182,10 +183,6 @@ public class WaitingRoomActivity extends AppCompatActivity {
 		StaticUtils.moveActivity(this, GameActivity.class, extras);
 
 		playersReference.document(FirebaseAuth.getInstance().getUid()).delete();
-		// Delete waiting room, only needs to be done once
-		if (host) {
-			roomDocument.delete();
-		}
 
 		// Stop this activity
 		finish();

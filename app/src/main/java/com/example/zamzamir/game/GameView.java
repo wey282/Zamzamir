@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Point;
+import android.graphics.PointF;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -55,6 +57,10 @@ public class GameView extends View {
 	private int rank = 4;
 	private Consumer<Integer> showGameEndScreen;
 
+	private Animation.AnimationManager animationManager;
+
+	private int WIDTH, HEIGHT;
+
 	public GameView(Context context) {
 		super(context);
 		init();
@@ -89,6 +95,8 @@ public class GameView extends View {
 		discardPillePaint = new Paint(targetedPaint);
 		discardPillePaint.setStyle(Paint.Style.FILL_AND_STROKE);
 		discardPillePaint.setStrokeWidth(30);
+
+		animationManager = new Animation.AnimationManager(this);
 	}
 
 	private boolean onTouch(View view, MotionEvent event) {
@@ -156,8 +164,11 @@ public class GameView extends View {
 		return true;
 	}
 
-	public void start(int playerCount, int player, Button skipButton, Button attackButton, DocumentReference lastTurnReference, Consumer<Integer> showGameEndScreen)
+	public void start(int playerCount, int player, Button skipButton, Button attackButton, DocumentReference lastTurnReference, Consumer<Integer> showGameEndScreen, int WIDTH, int HEIGHT)
 	{
+		this.WIDTH = WIDTH;
+		this.HEIGHT = HEIGHT;
+
 		players = new ArrayList<>();
 		for (int i = 0; i < playerCount; i++) {
 			players.add(new ArrayList<>());
@@ -171,6 +182,8 @@ public class GameView extends View {
 
 		this.skipButton.setOnClickListener(v -> skip());
 		this.attackButton.setOnClickListener(v -> attack());
+
+		disableButtons();
 
 		this.lastTurnReference = lastTurnReference;
 
@@ -186,17 +199,14 @@ public class GameView extends View {
 	/** Deals cards to all players, 2 hidden, one revealed */
 	private void dealCards() {
 		Card lowest = null;
+		int delayBetweenDraws = 200;
 		for (int i = 0; i < players.size(); i++) {
-			List<Card> player = players.get(i);
 			// deal 1 hidden card
-			Card card = Card.deck.remove(0);
-			card.setOwner(i);
-			player.add(card);
+			addCardToPlayer(delayBetweenDraws*3*i, i, 0, 3, Turn.FROM_DECK, false);
+
 			// deal 1 revealed card
-			card = Card.deck.remove(0);
-			card.setRevealed(true);
-			card.setOwner(i);
-			player.add(card);
+			Card card = addCardToPlayer(delayBetweenDraws*3*i+delayBetweenDraws, i, 1, 3, Turn.FROM_DECK, true);
+
 			// check if current card is the lowest defense value, and if so make that player start
 			if (lowest == null || lowest.getDefenceValue() > card.getDefenceValue()) {
 				lowest = card;
@@ -204,9 +214,7 @@ public class GameView extends View {
 			}
 
 			// deal 1 hidden card
-			card = Card.deck.remove(0);
-			card.setOwner(i);
-			player.add(card);
+			addCardToPlayer(delayBetweenDraws*3*i+2*delayBetweenDraws, i, 2, 3, Turn.FROM_DECK, false);
 		}
 		if (currentPlayer == player)
 			enableSkipButton();
@@ -243,9 +251,9 @@ public class GameView extends View {
 		if (!started)
 			return;
 
-		int cx = getWidth()/2 - Card.WIDTH/2, cy = getHeight()/2 - Card.HEIGHT/2;
+		int cx = WIDTH/2-Card.WIDTH/2, cy = HEIGHT/2-Card.HEIGHT/2;
 
-		centerCards(cx, cy);
+		centerCards();
 
 		// draw borders
 		canvas.drawRect(cx + (int)(Card.WIDTH*0.6), cy, cx + (int)(Card.WIDTH*0.6)+Card.WIDTH, cy+Card.HEIGHT, discardPillePaint);
@@ -268,32 +276,31 @@ public class GameView extends View {
 		// draw player's cards
 		for (int i = 0; i < players.size(); i++) {
 			List<Card> player = players.get(i);
-			double angle = Math.PI*2*(i-this.player)/players.size()+Math.PI/2;
 			for (int j = 0; j < player.size(); j++) {
 				Card card = player.get(j);
-				card.x = cx + (int)(Math.cos(angle)*Card.HEIGHT*1.6) + (int)((j - (double)player.size() /2 + 0.5) * Card.WIDTH * 1.5);
-				card.y = cy + (int)(Math.sin(angle)*Card.HEIGHT*1.6);
 				card.draw(canvas);
 			}
 		}
 		// show resized selected card
 		if (selectedCard != null) {
-			canvas.drawBitmap(selectedCard.getFullSprite(), 0, getHeight()/2f-selectedCard.getFullSprite().getHeight()/2f, null);
+			canvas.drawBitmap(selectedCard.getFullSprite(), 0, HEIGHT/2f-selectedCard.getFullSprite().getHeight()/2f, null);
 		}
 		// show resized drawn card
 		if (drawnCard != null) {
-			canvas.drawBitmap(drawnCard.getFullSprite(), getWidth()-drawnCard.getFullSprite().getWidth(), getHeight()/2f-drawnCard.getFullSprite().getHeight()/2f, null);
+			canvas.drawBitmap(drawnCard.getFullSprite(), WIDTH-drawnCard.getFullSprite().getWidth(), HEIGHT/2f-drawnCard.getFullSprite().getHeight()/2f, null);
 		}
 	}
 
-	private static void centerCards(int cx, int cy) {
+	private void centerCards() {
+		Point deckPosition = getDeckPosition();
 		for (Card card: Card.deck) {
-			card.x = cx -(int)(Card.WIDTH*0.6);
-			card.y = cy;
+			card.x = deckPosition.x;
+			card.y = deckPosition.y;
 		}
+		Point discardPilePosition = getDeckPosition();
 		for (Card card: Card.discardPile) {
-			card.x = cx +(int)(Card.WIDTH*0.6);
-			card.y = cy;
+			card.x = discardPilePosition.x;
+			card.y = discardPilePosition.y;
 			card.setRevealed(true);
 		}
 	}
@@ -367,10 +374,7 @@ public class GameView extends View {
 				card.setRevealed(false);
 				break;
 			case Turn.RECEIVE:
-				card = turn.getFrom() == Turn.FROM_DECK ? Card.deck.remove(0) : Card.discardPile.remove(0);
-				player.add(card);
-				card.setOwner(turn.getPlayer());
-				card.setRevealed(true);
+				addCardToPlayer(0, turn.getPlayer(), turn.getFrom(), true);
 				break;
 			case Turn.ATTACK:
 				Card attacker = players.get(turn.getPlayer()).get(turn.getSelectedCard());
@@ -445,10 +449,10 @@ public class GameView extends View {
 
 	/** Returns whether the given point is inside the discard pile. */
 	private boolean inDiscardPile(float x, float y) {
-		return x < getWidth()/2f + Card.WIDTH*1.1
-			&& x > getWidth()/2f + Card.WIDTH*0.1
-			&& y > getHeight()/2f - Card.HEIGHT/2f
-			&& y < getHeight()/2f + Card.HEIGHT/2f;
+		return x < WIDTH/2f + Card.WIDTH*1.1
+			&& x > WIDTH/2f + Card.WIDTH*0.1
+			&& y > HEIGHT/2f - Card.HEIGHT/2f
+			&& y < HEIGHT/2f + Card.HEIGHT/2f;
 	}
 
 	/** Check whether the game has ended and sets the player's rank. */
@@ -465,5 +469,61 @@ public class GameView extends View {
 	private void gameEnd() {
 		hideButtons();
 		showGameEndScreen.accept(rank);
+	}
+
+	private Point getDeckPosition() {
+		return new Point(WIDTH/2 - (int)(Card.WIDTH*1.1), HEIGHT/2-Card.HEIGHT/2);
+	}
+
+	private Point getDiscardPilePosition() {
+		return new Point(WIDTH/2 + (int)(Card.WIDTH*0.1), HEIGHT/2-Card.HEIGHT/2);
+	}
+
+	private Point getCardPosition(int player, int card, int handSize) {
+		double angle = Math.PI*2*(player-this.player)/players.size()+Math.PI/2;
+		List<Card> playerCards = players.get(player);
+		return new Point(WIDTH/2 - Card.WIDTH/2 + (int)(Math.cos(angle)*Card.HEIGHT*1.6)
+				   + (int)((card - handSize/2.0 + 0.5) * Card.WIDTH * 1.5),
+					HEIGHT/2 - Card.HEIGHT/2 + (int)(Math.sin(angle)*Card.HEIGHT*1.6));
+	}
+
+	/** Adds a card to a player.
+	 * @param player The player receiving the card.
+	 * @param from Where the card is drawn from.
+	 * @param delayInMillis The time between current time to when the animation will play. */
+	private Card addCardToPlayer(int delayInMillis, int player, int from, boolean revealed) {
+		return addCardToPlayer(delayInMillis, player, players.get(player).size(), players.get(player).size()+1, from, revealed);
+	}
+
+	/** Adds a card to a player.
+	 * @param player The player receiving the card.
+	 * @param from Where the card is drawn from.
+	 * @param delayInMillis The time between current time to when the animation will play. */
+	private Card addCardToPlayer(int delayInMillis, int player, int cardIndex, int handSize, int from, boolean revealed) {
+		Card card = null;
+
+		switch (from) {
+			case Turn.FROM_DECK:
+				card = Card.deck.remove(0);
+				players.get(player).add(card);
+				new Animation.CardMoveAnimation(animationManager, delayInMillis, card,
+						new PointF(getDeckPosition()),
+						new PointF(getCardPosition(player, cardIndex, handSize)));
+				break;
+			case Turn.FROM_DISCARD_PILE:
+				card = Card.discardPile.remove(0);
+				players.get(player).add(card);
+				new Animation.CardMoveAnimation(animationManager, delayInMillis, card,
+						new PointF(getDiscardPilePosition()),
+						new PointF(getCardPosition(player, cardIndex, handSize)));
+				break;
+		}
+
+		assert card != null;
+
+		card.setOwner(player);
+		card.setRevealed(revealed);
+
+		return card;
 	}
 }

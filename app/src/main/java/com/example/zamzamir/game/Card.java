@@ -93,6 +93,7 @@ public class Card extends Point {
 	public static void resetDeck() {
 		deck.clear();
 		deck.addAll(cards);
+		deck.forEach(card -> card.setRevealed(false));
 	}
 
 	public int getOwner() {

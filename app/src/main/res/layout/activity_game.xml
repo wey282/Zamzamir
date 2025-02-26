@@ -51,6 +51,7 @@
         android:layout_marginBottom="20dp"
         android:text="Wait for your turn"
         android:textSize="24sp"
+        android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="@+id/gameView"
         app:layout_constraintHorizontal_bias="0.499"
