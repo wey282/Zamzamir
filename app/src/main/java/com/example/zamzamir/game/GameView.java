@@ -21,7 +21,6 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 
 import java.util.ArrayList;
-import java.util.DoubleSummaryStatistics;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -61,6 +60,8 @@ public class GameView extends View {
 
 	private int WIDTH, HEIGHT;
 
+	private boolean sizeInitiated = false;
+
 	public GameView(Context context) {
 		super(context);
 		init();
@@ -97,6 +98,20 @@ public class GameView extends View {
 		discardPillePaint.setStrokeWidth(30);
 
 		animationManager = new Animation.AnimationManager(this);
+	}
+
+	@Override
+	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+		super.onSizeChanged(w, h, oldw, oldh);
+		sizeInitiated = true;
+		WIDTH = w;
+		HEIGHT = h;
+
+		if (started) {
+			dealCards();
+
+			invalidate();
+		}
 	}
 
 	private boolean onTouch(View view, MotionEvent event) {
@@ -164,10 +179,8 @@ public class GameView extends View {
 		return true;
 	}
 
-	public void start(int playerCount, int player, Button skipButton, Button attackButton, DocumentReference lastTurnReference, Consumer<Integer> showGameEndScreen, int WIDTH, int HEIGHT)
+	public void start(int playerCount, int player, Button skipButton, Button attackButton, DocumentReference lastTurnReference, Consumer<Integer> showGameEndScreen)
 	{
-		this.WIDTH = WIDTH;
-		this.HEIGHT = HEIGHT;
 
 		players = new ArrayList<>();
 		for (int i = 0; i < playerCount; i++) {
@@ -189,17 +202,20 @@ public class GameView extends View {
 
 		this.showGameEndScreen = showGameEndScreen;
 
-		dealCards();
-
 		started = true;
 
-		invalidate();
+		if (sizeInitiated) {
+			dealCards();
+
+			invalidate();
+		}
 	}
 
 	/** Deals cards to all players, 2 hidden, one revealed */
 	private void dealCards() {
+		centerCards();
 		Card lowest = null;
-		int delayBetweenDraws = 200;
+		int delayBetweenDraws = 350;
 		for (int i = 0; i < players.size(); i++) {
 			// deal 1 hidden card
 			addCardToPlayer(delayBetweenDraws*3*i, i, 0, 3, Turn.FROM_DECK, false);
@@ -253,10 +269,10 @@ public class GameView extends View {
 
 		int cx = WIDTH/2-Card.WIDTH/2, cy = HEIGHT/2-Card.HEIGHT/2;
 
-		centerCards();
-
 		// draw borders
 		canvas.drawRect(cx + (int)(Card.WIDTH*0.6), cy, cx + (int)(Card.WIDTH*0.6)+Card.WIDTH, cy+Card.HEIGHT, discardPillePaint);
+		if (deckSelected)
+			canvas.drawRect(getDeckPosition().x, getDeckPosition().y, getDeckPosition().x + Card.WIDTH, getDeckPosition().y + Card.HEIGHT, highlightPaint);
 		if (selectedCard != null)
 			canvas.drawRect(selectedCard.x, selectedCard.y, selectedCard.x + Card.WIDTH, selectedCard.y + Card.HEIGHT, highlightPaint);
 		if (confirmedCard != null)
@@ -367,26 +383,35 @@ public class GameView extends View {
 
 		switch (turn.getType()) {
 			case Turn.DRAW:
-				Card.discard(player.get(turn.getSelectedCard()));
+				Card.discard(this, animationManager, player.get(turn.getSelectedCard()));
 				card = turn.getFrom() == Turn.FROM_DECK ? Card.deck.remove(0) : Card.discardPile.remove(1);
 				player.set(turn.getSelectedCard(), card);
 				card.setOwner(turn.getPlayer());
-				card.setRevealed(false);
+				if (card.isRevealed())
+					new Animation.CardFlipAnimation(animationManager, 200, card);
+				new Animation.CardMoveAnimation(animationManager, 200, card, new PointF(getDeckPosition()), new PointF(getCardPosition(turn.getPlayer(), turn.getSelectedCard(), player.size())));
+				card.setAttackPosition(getAttackPosition(turn.getPlayer(), turn.getSelectedCard(), player.size()));
 				break;
 			case Turn.RECEIVE:
-				addCardToPlayer(0, turn.getPlayer(), turn.getFrom(), true);
+				addCardToPlayer(turn.getPlayer(), turn.getFrom());
+				sortCards(turn.getPlayer(), Animation.CardMoveAnimation.length);
 				break;
 			case Turn.ATTACK:
 				Card attacker = players.get(turn.getPlayer()).get(turn.getSelectedCard());
 				Card defender = players.get(turn.getTargetPlayer()).get(turn.getTargetCard());
-				if (attacker.getAttackValue() + turn.getAttackerRoll() >= defender.getDefenceValue() + turn.getDefenderRoll())
-					Card.discard(players.get(turn.getTargetPlayer()).remove(turn.getTargetCard()));
-				if (attacker.getAttackValue() + turn.getAttackerRoll() <= defender.getDefenceValue() + turn.getDefenderRoll())
-					Card.discard(players.get(turn.getPlayer()).remove(turn.getSelectedCard()));
+				Animation.AttackAnimation.play(animationManager, 0, attacker, defender);
+				if (attacker.getAttackValue() + turn.getAttackerRoll() >= defender.getDefenceValue() + turn.getDefenderRoll()) {
+					Card.discard(Animation.AttackAnimation.totalLength, this, animationManager, players.get(turn.getTargetPlayer()).remove(turn.getTargetCard()));
+					sortCards(turn.getTargetPlayer(), Animation.AttackAnimation.totalLength + Animation.CardMoveAnimation.length);
+				}
+				if (attacker.getAttackValue() + turn.getAttackerRoll() <= defender.getDefenceValue() + turn.getDefenderRoll()) {
+					Card.discard(Animation.AttackAnimation.totalLength, this, animationManager, players.get(turn.getPlayer()).remove(turn.getSelectedCard()));
+					sortCards(turn.getPlayer(), Animation.AttackAnimation.totalLength + Animation.CardMoveAnimation.length);
+				}
 				Toast.makeText(getContext(), "Atk: " + turn.getAttackerRoll() + ", Def: " + turn.getDefenderRoll(), Toast.LENGTH_LONG).show();
 				break;
 			case Turn.DISCARD:
-				Card.discard(Card.deck.remove(0));
+				Card.discard(this, animationManager, Card.deck.remove(0));
 				break;
 		}
 
@@ -471,28 +496,34 @@ public class GameView extends View {
 		showGameEndScreen.accept(rank);
 	}
 
-	private Point getDeckPosition() {
+	public Point getDeckPosition() {
 		return new Point(WIDTH/2 - (int)(Card.WIDTH*1.1), HEIGHT/2-Card.HEIGHT/2);
 	}
 
-	private Point getDiscardPilePosition() {
+	public Point getDiscardPilePosition() {
 		return new Point(WIDTH/2 + (int)(Card.WIDTH*0.1), HEIGHT/2-Card.HEIGHT/2);
 	}
 
-	private Point getCardPosition(int player, int card, int handSize) {
+	public Point getCardPosition(int player, int card, int handSize) {
 		double angle = Math.PI*2*(player-this.player)/players.size()+Math.PI/2;
-		List<Card> playerCards = players.get(player);
 		return new Point(WIDTH/2 - Card.WIDTH/2 + (int)(Math.cos(angle)*Card.HEIGHT*1.6)
 				   + (int)((card - handSize/2.0 + 0.5) * Card.WIDTH * 1.5),
 					HEIGHT/2 - Card.HEIGHT/2 + (int)(Math.sin(angle)*Card.HEIGHT*1.6));
 	}
+	private PointF getAttackPosition(int player, int card, int handSize) {
+		double angle = Math.PI*2*(player-this.player)/players.size()+Math.PI/2;
+		return new PointF(WIDTH/2f - Card.WIDTH/2f + (int)(Math.cos(angle)*Card.HEIGHT*1.6)
+				+ (int)((card - handSize/2.0 + 0.5) * Card.WIDTH * 1.5),
+				HEIGHT/2f - Card.HEIGHT/2f + (int)(Math.sin(angle)*Card.HEIGHT*0.6));
+	}
 
-	/** Adds a card to a player.
+	/**
+	 * Adds a card to a player.
 	 * @param player The player receiving the card.
-	 * @param from Where the card is drawn from.
-	 * @param delayInMillis The time between current time to when the animation will play. */
-	private Card addCardToPlayer(int delayInMillis, int player, int from, boolean revealed) {
-		return addCardToPlayer(delayInMillis, player, players.get(player).size(), players.get(player).size()+1, from, revealed);
+	 * @param from   Where the card is drawn from.
+	 */
+	private void addCardToPlayer(int player, int from) {
+		addCardToPlayer(0, player, players.get(player).size(), players.get(player).size() + 1, from, true);
 	}
 
 	/** Adds a card to a player.
@@ -522,8 +553,21 @@ public class GameView extends View {
 		assert card != null;
 
 		card.setOwner(player);
-		card.setRevealed(revealed);
+		if (card.isRevealed() != revealed)
+			new Animation.CardFlipAnimation(animationManager, delayInMillis, card);
+
+		card.setAttackPosition(getAttackPosition(player, cardIndex, handSize));
 
 		return card;
+	}
+
+	/** Order given players cards */
+	private void sortCards(int playerIndex, int delay) {
+		List<Card> player = players.get(playerIndex);
+		for (int i = 0; i < player.size(); i++) {
+			Card card = player.get(i);
+			new Animation.CardMoveAnimation(animationManager, delay, card, new PointF(card), new PointF(getCardPosition(playerIndex, i, player.size())));
+			card.setAttackPosition(getAttackPosition(playerIndex, i, player.size()));
+		}
 	}
 }

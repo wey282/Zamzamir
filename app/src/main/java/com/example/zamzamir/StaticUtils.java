@@ -8,7 +8,6 @@ import android.content.pm.ActivityInfo;
 import android.content.res.XmlResourceParser;
 import android.graphics.PointF;
 import android.util.Log;
-import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
 import com.example.zamzamir.game.Card;
@@ -42,16 +41,6 @@ public class StaticUtils {
 	/** Sets the phone orientation to horizontal. */
 	public static void setOrientationToHorizontal(Activity activity) {
 		activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-	}
-
-	/** Hides keyboard for given activity. */
-	public static void hideKeyboard(Activity a) {
-		InputMethodManager m = (InputMethodManager)a.getSystemService(Context.INPUT_METHOD_SERVICE);
-
-		View focus = a.getCurrentFocus();
-
-		if (m != null && focus != null)
-			m.hideSoftInputFromWindow(focus.getWindowToken(), 0);
 	}
 
 	/** Hides keyboard for given dialog */
@@ -90,7 +79,6 @@ public class StaticUtils {
 	public static List<Integer> createShuffle() {
 		Card.resetDeck();
 		int cardCount = Card.deck.size();
-		Log.d("banana", "createShuffle: " + cardCount);
 
 		// Create an array containing indexes from 0 to card count
 		List<Integer> shuffle = new ArrayList<>();

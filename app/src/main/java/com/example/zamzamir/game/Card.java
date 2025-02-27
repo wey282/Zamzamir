@@ -4,6 +4,8 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PointF;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -20,18 +22,23 @@ public class Card extends Point {
 	public static final int WIDTH = 156, HEIGHT = 220;
 
 	public static Bitmap back;
-
 	private final Bitmap fullSprite;
 	private final Bitmap sprite;
+	private Bitmap activeSprite;
+
+	private PointF attackPosition;
+
 	private boolean revealed;
 
-	private int attackValue;
-	private int defenceValue;
+	private final int attackValue;
+	private final int defenceValue;
 
 	private int owner = -1;
 	/** The value of @owner for which the card is in the deck*/
 	public static final int DECK = -1;
 	public static final int DISCARD_PILE = -2;
+
+	private int xOffset = 0;
 
 	public Card(Bitmap sprite, int attackValue, int defenceValue) {
 		this.fullSprite = sprite;
@@ -40,12 +47,18 @@ public class Card extends Point {
 		this.defenceValue = defenceValue;
 		deck.add(this);
 		cards.add(this);
+
+		activeSprite = back;
 	}
 
 	/** Draws the card on the screen.*/
 	public void draw(Canvas canvas) {
-		canvas.drawRect(x, y, x + WIDTH, y + HEIGHT, borderPaint);
-		canvas.drawBitmap(revealed ? sprite : back, x, y, null);
+		canvas.drawRect(x + xOffset, y, x + activeSprite.getWidth() + xOffset, y + HEIGHT, borderPaint);
+		canvas.drawBitmap(activeSprite, x + xOffset, y, null);
+	}
+
+	public boolean isRevealed() {
+		return revealed;
 	}
 
 	public void setRevealed(boolean revealed) {
@@ -66,6 +79,26 @@ public class Card extends Point {
 
 	public void setOwner(int player) {
 		owner = player;
+	}
+
+	public Bitmap getSprite() {
+		return sprite;
+	}
+
+	public void setActiveSprite(Bitmap activeSprite) {
+		this.activeSprite = activeSprite;
+	}
+
+	public void setxOffset(int xOffset) {
+		this.xOffset = xOffset;
+	}
+
+	public PointF getAttackPosition() {
+		return attackPosition;
+	}
+
+	public void setAttackPosition(PointF attackPosition) {
+		this.attackPosition = attackPosition;
 	}
 
 	/** Checks whether x,y is inside a card */
@@ -113,15 +146,25 @@ public class Card extends Point {
 	public static void shuffle(List<Integer> shuffle) {
 		discardPile.clear();
 		deck.clear();
+		Log.d("banana", "shuffle: " + shuffle);
 		for (int i : shuffle) {
 			deck.add(cards.get(i));
 		}
 	}
 
-	/** Adds*/
-	public static void discard(Card card) {
+	/** Adds a card to the discard pile. */
+	public static void discard(GameView gameView, Animation.AnimationManager animationManager, Card card) {
+		discard(0, gameView, animationManager, card);
+	}
+
+	/** Adds a card to the discard pile. */
+	public static void discard(int delay, GameView gameView, Animation.AnimationManager animationManager, Card card) {
 		card.owner = DISCARD_PILE;
 		discardPile.add(0, card);
+
+		if (!card.isRevealed())
+			new Animation.CardFlipAnimation(animationManager, delay, card);
+		new Animation.CardMoveAnimation(animationManager, delay, card, new PointF(card), new PointF(gameView.getDiscardPilePosition()));
 	}
 
 	@NonNull

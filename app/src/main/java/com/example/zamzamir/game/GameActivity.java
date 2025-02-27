@@ -31,9 +31,6 @@ public class GameActivity extends AppCompatActivity {
 
 	private boolean started = false;
 
-	private int WIDTH;
-	private int HEIGHT;
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -44,11 +41,6 @@ public class GameActivity extends AppCompatActivity {
 			v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
 			return insets;
 		});
-
-		DisplayMetrics displayMetrics = new DisplayMetrics();
-		getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-		HEIGHT = displayMetrics.heightPixels;
-		WIDTH = displayMetrics.widthPixels;
 
 		findButtons();
 
@@ -98,7 +90,7 @@ public class GameActivity extends AppCompatActivity {
 
 		Card.resetDeck();
 		Card.shuffle(gameRoom.getShuffle());
-		gameView.start(gameRoom.getPlayerCount(), player, skipButton, attackButton, lastTurn, this::showGameEndScreen, WIDTH, HEIGHT);
+		gameView.start(gameRoom.getPlayerCount(), player, skipButton, attackButton, lastTurn, this::showGameEndScreen);
 	}
 
 	private void showGameEndScreen(int rank) {
