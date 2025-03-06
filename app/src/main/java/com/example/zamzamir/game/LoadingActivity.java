@@ -89,6 +89,11 @@ public class LoadingActivity extends AppCompatActivity {
 				}
 			}
 			parser.close();
+
+			Animation.explosionSpriteSheet = BitmapFactory.decodeResource(getResources(), R.drawable.explosion_sprite_sheet);
+
+			Log.d("banana", "loadCards: " + Card.deck.size());
+
 			onFinish.run();
 		} catch (Exception e) {
 			Log.e("banana", e.getMessage() + "\n" + e.getCause());

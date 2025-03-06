@@ -11,6 +11,27 @@
     <card id="8" name="caessel" type="bilding" attack="8" defence="12" image="@drawable/card_caessel" bleed="true" luck="false"/>
     <card id="9" name="skicekraipr" type="bilding" attack="9" defence="13" image="@drawable/card_skicekraipr" bleed="true" luck="false"/>
     <card id="10" name="piraemed" type="bilding" attack="10" defence="14" image="@drawable/card_piraemed" bleed="true" luck="false"/>
-
+    <card id="11" name="ratto" type="animol" attack="4" defence="0" image="@drawable/card_ratto" bleed="false" luck="false"/>
+    <card id="12" name="dovo" type="animol" attack="5" defence="1" image="@drawable/card_dovo" bleed="false" luck="false"/>
+    <card id="13" name="rabbot" type="animol" attack="6" defence="2" image="@drawable/card_rabbot" bleed="false" luck="false"/>
+    <card id="14" name="turtol" type="animol" attack="7" defence="3" image="@drawable/card_turtol" bleed="false" luck="false"/>
+    <card id="15" name="froggo" type="animol" attack="8" defence="4" image="@drawable/card_froggo" bleed="false" luck="false"/>
+    <card id="16" name="doggo" type="animol" attack="9" defence="5" image="@drawable/card_doggo" bleed="false" luck="false"/>
+    <card id="17" name="bearo" type="animol" attack="10" defence="6" image="@drawable/card_bearo" bleed="false" luck="false"/>
+    <card id="18" name="lo'on" type="animol" attack="11" defence="7" image="@drawable/card_loon" bleed="false" luck="false"/>
+    <card id="19" name="drago, eater of bunnies" type="animol" attack="12" defence="8" image="@drawable/card_drago_eater_of_bunnies" bleed="true" luck="false"/>
+    <card id="20" name="torrym, the fire starter" type="animol" attack="13" defence="9" image="@drawable/card_brambeidaineth_champion_of_dragons" bleed="true" luck="false"/>
+    <card id="21" name="brambeidaineth, champion of dragons" type="animol" attack="14" defence="10" image="@drawable/card_brambeidaineth_champion_of_dragons" bleed="true" luck="false"/>
+    <card id="22" name="jonjon" type="john" attack="3" defence="1" image="@drawable/card_jonjon" bleed="false" luck="false"/>
+    <card id="23" name="jhonson" type="john" attack="4" defence="2" image="@drawable/card_johnson" bleed="false" luck="false"/>
+    <card id="24" name="jhon" type="john" attack="5" defence="3" image="@drawable/card_jhon" bleed="false" luck="false"/>
+    <card id="25" name="johon" type="john" attack="6" defence="4" image="@drawable/card_johon" bleed="false" luck="false"/>
+    <card id="26" name="jhohn" type="john" attack="7" defence="5" image="@drawable/card_jhohn" bleed="false" luck="false"/>
+    <card id="27" name="john" type="john" attack="8" defence="6" image="@drawable/card_john" bleed="false" luck="false"/>
+    <card id="28" name="stone john" type="john" attack="9" defence="7" image="@drawable/card_stone_john" bleed="false" luck="false"/>
+    <card id="29" name="nojnoj" type="john" attack="10" defence="8" image="@drawable/card_nojnoj" bleed="false" luck="false"/>
+    <card id="30" name="old john" type="john" attack="11" defence="9" image="@drawable/card_old_john" bleed="true" luck="false"/>
+    <card id="31" name="nhoj jr" type="john" attack="12" defence="10" image="@drawable/card_nhoj_jr" bleed="true" luck="false"/>
+    <card id="32" name="nhoj" type="john" attack="13" defence="11" image="@drawable/card_nhoj" bleed="true" luck="false"/>
 
 </cards>

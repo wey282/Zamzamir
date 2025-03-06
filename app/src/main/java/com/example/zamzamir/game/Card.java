@@ -32,6 +32,7 @@ public class Card extends Point {
 
 	private final int attackValue;
 	private final int defenceValue;
+	private final int id;
 
 	private int owner = -1;
 	/** The value of @owner for which the card is in the deck*/
@@ -46,6 +47,7 @@ public class Card extends Point {
 		this.attackValue = attackValue;
 		this.defenceValue = defenceValue;
 		deck.add(this);
+		id = cards.size();
 		cards.add(this);
 
 		activeSprite = back;
@@ -105,7 +107,8 @@ public class Card extends Point {
 	public static Card checkTouchForAllCards(float x, float y) {
 		for (Card card: cards) {
 			if (x > card.x && card.x + WIDTH  > x
-		  	 && y > card.y && card.y + HEIGHT > y)
+		  	 && y > card.y && card.y + HEIGHT > y
+			 && (card.owner != DISCARD_PILE || discardPile.get(0).equals(card)))
 				return card;
 		}
 		return null;
@@ -146,9 +149,12 @@ public class Card extends Point {
 	public static void shuffle(List<Integer> shuffle) {
 		discardPile.clear();
 		deck.clear();
-		Log.d("banana", "shuffle: " + shuffle);
 		for (int i : shuffle) {
-			deck.add(cards.get(i));
+			Card card = cards.get(i);
+			deck.add(card);
+			card.setRevealed(false);
+			card.setOwner(DECK);
+			card.setActiveSprite(back);
 		}
 	}
 
@@ -170,6 +176,14 @@ public class Card extends Point {
 	@NonNull
 	@Override
 	public String toString() {
-		return "id: " + cards.indexOf(this) + " Value: " + defenceValue + "/" + attackValue + " Position: " +  super.toString();
+		return "id: " + id + " Value: " + defenceValue + "/" + attackValue + " Position: " +  super.toString();
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (! (o instanceof Card))
+			return false;
+		Card oCard = (Card)o;
+		return oCard.id == this.id;
 	}
 }

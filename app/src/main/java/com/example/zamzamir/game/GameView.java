@@ -285,8 +285,11 @@ public class GameView extends View {
 			Card.deck.get(0).draw(canvas);
 
 		// draw discard pile
-		if (!Card.discardPile.isEmpty())
+		if (!Card.discardPile.isEmpty()) {
+			if (Card.discardPile.size() > 1)
+				Card.discardPile.get(1).draw(canvas);
 			Card.discardPile.get(0).draw(canvas);
+		}
 
 
 		// draw player's cards
@@ -305,6 +308,8 @@ public class GameView extends View {
 		if (drawnCard != null) {
 			canvas.drawBitmap(drawnCard.getFullSprite(), WIDTH-drawnCard.getFullSprite().getWidth(), HEIGHT/2f-drawnCard.getFullSprite().getHeight()/2f, null);
 		}
+
+		ImageObject.drawAll(canvas);
 	}
 
 	private void centerCards() {
@@ -356,6 +361,7 @@ public class GameView extends View {
 
 	/** Receive card from given pile. */
 	private void receiveCard(int from) {
+		receivingCard = false;
 		Turn turn = Turn.receiveTurn(player, from);
 		lastTurnReference.set(turn);
 	}
@@ -493,7 +499,7 @@ public class GameView extends View {
 
 	private void gameEnd() {
 		hideButtons();
-		showGameEndScreen.accept(rank);
+		new Animation.Delay(animationManager, Animation.AttackAnimation.totalLength*2, () -> showGameEndScreen.accept(rank));
 	}
 
 	public Point getDeckPosition() {

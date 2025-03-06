@@ -2,8 +2,11 @@ package com.example.zamzamir.game;
 
 import android.graphics.Bitmap;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.os.SystemClock;
+import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 
 import androidx.annotation.VisibleForTesting;
 
@@ -27,6 +30,8 @@ public abstract class Animation {
 	protected float progress;
 
 	private Runnable onFinish;
+
+	public static Bitmap explosionSpriteSheet;
 
 	public Animation(AnimationManager manager, int delay, int length) {
 		start = System.currentTimeMillis()+delay;
@@ -178,6 +183,49 @@ public abstract class Animation {
 			PointF start = new PointF(attacker);
 			new CardMoveAnimation(manager, delay, attackLength, attacker, start, attacked.getAttackPosition()).setOnFinish(() ->
 					new CardMoveAnimation(manager, stayLength, retreatLength, attacker, new PointF(attacker), start));
+			new FromSpriteSheet(manager, attackLength, 50*11, 11, explosionSpriteSheet, new ImageObject(null, (int)attacked.getAttackPosition().x-64-Card.WIDTH/2, (int)attacked.getAttackPosition().y-64+(attacked.getAttackPosition().y<attacked.y ? Card.HEIGHT/2 : -Card.HEIGHT/2)));
 		}
 	}
+
+	public static class Delay extends Animation {
+		public Delay(AnimationManager manager, int delay, Runnable onFinish) {
+			super(manager, delay, 0);
+			setOnFinish(onFinish);
+		}
+	}
+
+	public static class FromSpriteSheet extends Animation {
+
+		private final Bitmap[] bitmaps;
+
+		private final ImageObject display;
+
+		public FromSpriteSheet(AnimationManager manager, int delay, int length, int frames, Bitmap source, ImageObject display) {
+			super(manager, delay, length);
+
+			bitmaps = new Bitmap[frames];
+
+			int width = source.getWidth()/frames;
+
+			this.display = display;
+
+			for (int i = 0; i < frames; i++) {
+				Rect rect = new Rect(width*i, 0, width*(i+1), source.getHeight());
+				bitmaps[i] = Bitmap.createBitmap(source, rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top);
+			}
+
+			setOnFinish(display::delete);
+		}
+
+		@Override
+		public boolean play(float delta) {
+			if (!super.play(delta))
+				return false;
+
+			display.setBitmap(bitmaps[(int)Math.min(bitmaps.length*progress, bitmaps.length-1)]);
+
+			return true;
+		}
+	}
+
 }

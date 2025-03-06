@@ -5,6 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background"
     tools:context=".game.LoadingActivity">
 
     <TextView
@@ -12,6 +13,7 @@
         android:layout_width="307dp"
         android:layout_height="62dp"
         android:text="Loading resources..."
+        android:textColor="#CFCFCF"
         android:textSize="34sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -27,6 +29,9 @@
         android:layout_marginTop="8dp"
         android:maxWidth="60dip"
         android:minWidth="60dip"
+        android:progress="0"
+        android:progressBackgroundTint="#FF6262"
+        android:progressTint="#8BC34A"
         android:scaleY="5"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"

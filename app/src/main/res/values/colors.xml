@@ -10,5 +10,7 @@
     <color name="attack_button">#FFD14D4D</color>
     <color name="enabled_button">#FF55E755</color>
     <color name="disabled_button">#FFB7B7B7</color>
+    <color name="background">#FF461565</color>
+    <color name="text">#D6D6D6</color>
 
 </resources>

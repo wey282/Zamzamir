@@ -1,9 +1,11 @@
 package com.example.zamzamir.game;
 
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.widget.Button;
+import android.widget.ImageView;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -94,6 +96,7 @@ public class GameActivity extends AppCompatActivity {
 	}
 
 	private void showGameEndScreen(int rank) {
-		new EndScreenDialog(this, rank, this::finish).show();
+		gameView.post(() ->
+			new EndScreenDialog(this, rank, this::finish).show());
 	}
 }
