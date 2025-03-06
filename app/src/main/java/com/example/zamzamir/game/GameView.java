@@ -2,10 +2,12 @@ package com.example.zamzamir.game;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -41,9 +43,11 @@ public class GameView extends View {
 	private Paint confirmedPaint;
 	private Paint targetedPaint;
 	private Paint discardPillePaint;
+	private TextPaint rollPaint;
 
 	private Button skipButton;
 	private Button attackButton;
+	private Button lastBattleButton;
 
 	private boolean deckSelected;
 	private boolean discardPileSelected;
@@ -61,6 +65,9 @@ public class GameView extends View {
 	private int WIDTH, HEIGHT;
 
 	private boolean sizeInitiated = false;
+
+	private Battle lastBattle;
+	private boolean viewingLastBattle = false;
 
 	public GameView(Context context) {
 		super(context);
@@ -97,6 +104,10 @@ public class GameView extends View {
 		discardPillePaint.setStyle(Paint.Style.FILL_AND_STROKE);
 		discardPillePaint.setStrokeWidth(30);
 
+		rollPaint = new TextPaint();
+		rollPaint.setColor(getColor(R.color.roll_text));
+		rollPaint.setTextSize(200);
+
 		animationManager = new Animation.AnimationManager(this);
 	}
 
@@ -115,7 +126,9 @@ public class GameView extends View {
 	}
 
 	private boolean onTouch(View view, MotionEvent event) {
-
+		viewingLastBattle = false;
+		if (drawnCard == null)
+			showButtons();
 		if (currentPlayer == player) {
 			if (event.getAction() == MotionEvent.ACTION_DOWN) {
 				Card card = Card.checkTouchForAllCards(event.getX(), event.getY());
@@ -179,8 +192,9 @@ public class GameView extends View {
 		return true;
 	}
 
-	public void start(int playerCount, int player, Button skipButton, Button attackButton, DocumentReference lastTurnReference, Consumer<Integer> showGameEndScreen)
+	public void start(int playerCount, int player, Button skipButton, Button attackButton, Button lastBattleButton, DocumentReference lastTurnReference, Consumer<Integer> showGameEndScreen)
 	{
+		Card.player = player;
 
 		players = new ArrayList<>();
 		for (int i = 0; i < playerCount; i++) {
@@ -192,9 +206,11 @@ public class GameView extends View {
 
 		this.skipButton = skipButton;
 		this.attackButton = attackButton;
+		this.lastBattleButton = lastBattleButton;
 
 		this.skipButton.setOnClickListener(v -> skip());
 		this.attackButton.setOnClickListener(v -> attack());
+		this.lastBattleButton.setOnClickListener(v -> viewLastBattle());
 
 		disableButtons();
 
@@ -302,11 +318,26 @@ public class GameView extends View {
 		}
 		// show resized selected card
 		if (selectedCard != null) {
-			canvas.drawBitmap(selectedCard.getFullSprite(), 0, HEIGHT/2f-selectedCard.getFullSprite().getHeight()/2f, null);
+			canvas.drawBitmap(selectedCard.getFullSprite(), 20, HEIGHT/2f-selectedCard.getFullSprite().getHeight()/2f, null);
 		}
 		// show resized drawn card
 		if (drawnCard != null) {
-			canvas.drawBitmap(drawnCard.getFullSprite(), WIDTH-drawnCard.getFullSprite().getWidth(), HEIGHT/2f-drawnCard.getFullSprite().getHeight()/2f, null);
+			canvas.drawBitmap(drawnCard.getFullSprite(), WIDTH-20-drawnCard.getFullSprite().getWidth(), HEIGHT/2f-drawnCard.getFullSprite().getHeight()/2f, null);
+		}
+
+		// show attacker and defender
+		if (viewingLastBattle) {
+			Card attacker = lastBattle.getAttacker();
+			Bitmap attackerFullSprite = attacker.getFullSprite();
+			canvas.drawRect(20, HEIGHT/2f-attackerFullSprite.getHeight()/2f, 20+attackerFullSprite.getWidth(), HEIGHT/2f+attackerFullSprite.getHeight()/2f, targetedPaint);
+			canvas.drawBitmap(attackerFullSprite, 20, HEIGHT/2f-attackerFullSprite.getHeight()/2f, null);
+			canvas.drawText(Integer.toString(lastBattle.getAttackerRoll()), attackerFullSprite.getWidth()/2f - 30, HEIGHT/2f-attackerFullSprite.getHeight()/2f + 120, rollPaint);
+
+			Card defender = lastBattle.getDefender();
+			Bitmap defenderFullSprite = defender.getFullSprite();
+			canvas.drawRect(WIDTH-20-defenderFullSprite.getWidth(), HEIGHT/2f-defenderFullSprite.getHeight()/2f, WIDTH-20, HEIGHT/2f+defenderFullSprite.getHeight()/2f, confirmedPaint);
+			canvas.drawBitmap(defenderFullSprite, WIDTH-20-defenderFullSprite.getWidth(), HEIGHT/2f-defenderFullSprite.getHeight()/2f, null);
+			canvas.drawText(Integer.toString(lastBattle.getDefenderRoll()), WIDTH-defenderFullSprite.getWidth()/2f - 50, HEIGHT/2f-defenderFullSprite.getHeight()/2f+120, rollPaint);
 		}
 
 		ImageObject.drawAll(canvas);
@@ -415,6 +446,10 @@ public class GameView extends View {
 					sortCards(turn.getPlayer(), Animation.AttackAnimation.totalLength + Animation.CardMoveAnimation.length);
 				}
 				Toast.makeText(getContext(), "Atk: " + turn.getAttackerRoll() + ", Def: " + turn.getDefenderRoll(), Toast.LENGTH_LONG).show();
+				if (this.player == turn.getPlayer() || this.player == turn.getTargetPlayer()) {
+					lastBattleButton.setVisibility(VISIBLE);
+					lastBattle = new Battle(attacker, defender, turn.getAttackerRoll(), turn.getDefenderRoll());
+				}
 				break;
 			case Turn.DISCARD:
 				Card.discard(this, animationManager, Card.deck.remove(0));
@@ -471,11 +506,14 @@ public class GameView extends View {
 	public void hideButtons() {
 		skipButton.setVisibility(GONE);
 		attackButton.setVisibility(GONE);
+		lastBattleButton.setVisibility(GONE);
 	}
 
 	public void showButtons() {
 		skipButton.setVisibility(VISIBLE);
 		attackButton.setVisibility(VISIBLE);
+		if (lastBattle != null)
+			lastBattleButton.setVisibility(VISIBLE);
 	}
 
 	/** Returns whether the given point is inside the discard pile. */
@@ -567,7 +605,7 @@ public class GameView extends View {
 		return card;
 	}
 
-	/** Order given players cards */
+	/** Order given players cards. */
 	private void sortCards(int playerIndex, int delay) {
 		List<Card> player = players.get(playerIndex);
 		for (int i = 0; i < player.size(); i++) {
@@ -575,5 +613,12 @@ public class GameView extends View {
 			new Animation.CardMoveAnimation(animationManager, delay, card, new PointF(card), new PointF(getCardPosition(playerIndex, i, player.size())));
 			card.setAttackPosition(getAttackPosition(playerIndex, i, player.size()));
 		}
+	}
+
+	/** Shows the last battle. */
+	private void viewLastBattle() {
+		viewingLastBattle = true;
+		hideButtons();
+		invalidate();
 	}
 }

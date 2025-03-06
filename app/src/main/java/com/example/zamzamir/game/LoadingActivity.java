@@ -49,8 +49,8 @@ public class LoadingActivity extends AppCompatActivity {
 	}
 
 	private void startLoading() {
-		Card.back = BitmapFactory.decodeResource(getResources(), R.drawable.back);
-		Card.back = Bitmap.createScaledBitmap(Card.back, Card.WIDTH, Card.HEIGHT, false);
+		Card.fullBackSprite = BitmapFactory.decodeResource(getResources(), R.drawable.back);
+		Card.back = Bitmap.createScaledBitmap(Card.fullBackSprite, Card.WIDTH, Card.HEIGHT, false);
 		Card.createBorderPaint(ContextCompat.getColor(this, R.color.border));
 
 		cardCount = StaticUtils.countCards(this);

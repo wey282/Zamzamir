@@ -12,5 +12,6 @@
     <color name="disabled_button">#FFB7B7B7</color>
     <color name="background">#FF461565</color>
     <color name="text">#D6D6D6</color>
+    <color name="roll_text">#FFD6D622</color>
 
 </resources>

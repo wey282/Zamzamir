@@ -58,4 +58,18 @@
         app:layout_constraintHorizontal_bias="0.499"
         app:layout_constraintStart_toStartOf="@+id/gameView" />
 
+    <Button
+        android:id="@+id/lastBattleButton"
+        android:layout_width="153dp"
+        android:layout_height="77dp"
+        android:layout_marginBottom="16dp"
+        android:backgroundTint="#6B2B2B"
+        android:text="View Last Battle"
+        android:textSize="20sp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/attackButton"
+        app:layout_constraintEnd_toEndOf="@+id/attackButton"
+        app:layout_constraintHorizontal_bias="0.588"
+        app:layout_constraintStart_toStartOf="@+id/attackButton" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

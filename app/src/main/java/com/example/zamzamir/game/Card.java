@@ -22,6 +22,7 @@ public class Card extends Point {
 	public static final int WIDTH = 156, HEIGHT = 220;
 
 	public static Bitmap back;
+	public static Bitmap fullBackSprite;
 	private final Bitmap fullSprite;
 	private final Bitmap sprite;
 	private Bitmap activeSprite;
@@ -35,9 +36,12 @@ public class Card extends Point {
 	private final int id;
 
 	private int owner = -1;
-	/** The value of @owner for which the card is in the deck*/
+	/** The value of @owner for which the card is in the deck.*/
 	public static final int DECK = -1;
+	/** The value of @owner for which the card is in the discard pile.*/
 	public static final int DISCARD_PILE = -2;
+
+	public static int player;
 
 	private int xOffset = 0;
 
@@ -185,5 +189,10 @@ public class Card extends Point {
 			return false;
 		Card oCard = (Card)o;
 		return oCard.id == this.id;
+	}
+
+	/** Returns whether the player knows this card. */
+	private boolean knownToPlayer() {
+		return revealed || owner == player;
 	}
 }

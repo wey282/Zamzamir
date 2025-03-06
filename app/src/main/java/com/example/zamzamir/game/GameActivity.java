@@ -28,6 +28,7 @@ public class GameActivity extends AppCompatActivity {
 	private GameView gameView;
 	private Button skipButton;
 	private Button attackButton;
+	private Button lastBattleButton;
 
 	private int player;
 
@@ -66,6 +67,7 @@ public class GameActivity extends AppCompatActivity {
 	private void findButtons() {
 		skipButton = findViewById(R.id.skipButton);
 		attackButton = findViewById(R.id.attackButton);
+		lastBattleButton = findViewById(R.id.lastBattleButton);
 	}
 
 	/** Finds the game-view and starts it. */
@@ -92,7 +94,7 @@ public class GameActivity extends AppCompatActivity {
 
 		Card.resetDeck();
 		Card.shuffle(gameRoom.getShuffle());
-		gameView.start(gameRoom.getPlayerCount(), player, skipButton, attackButton, lastTurn, this::showGameEndScreen);
+		gameView.start(gameRoom.getPlayerCount(), player, skipButton, attackButton, lastBattleButton, lastTurn, this::showGameEndScreen);
 	}
 
 	private void showGameEndScreen(int rank) {
