@@ -13,5 +13,10 @@
     <color name="background">#FF461565</color>
     <color name="text">#D6D6D6</color>
     <color name="roll_text">#FFD6D622</color>
+    <color name="ready_text">#FF33E733</color>
+    <color name="unready_text">#FFBBBBBB</color>
+    <color name="current_player">#FF33E733</color>
+    <color name="player">#FBBBBBBB</color>
+    <color name="dead_player">#FF555555</color>
 
 </resources>

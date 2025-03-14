@@ -20,7 +20,7 @@
     <card id="17" name="bearo" type="animol" attack="10" defence="6" image="@drawable/card_bearo" bleed="false" luck="false"/>
     <card id="18" name="lo'on" type="animol" attack="11" defence="7" image="@drawable/card_loon" bleed="false" luck="false"/>
     <card id="19" name="drago, eater of bunnies" type="animol" attack="12" defence="8" image="@drawable/card_drago_eater_of_bunnies" bleed="true" luck="false"/>
-    <card id="20" name="torrym, the fire starter" type="animol" attack="13" defence="9" image="@drawable/card_brambeidaineth_champion_of_dragons" bleed="true" luck="false"/>
+    <card id="20" name="torrym, the fire starter" type="animol" attack="13" defence="9" image="@drawable/card_torrym_the_firestarter" bleed="true" luck="false"/>
     <card id="21" name="brambeidaineth, champion of dragons" type="animol" attack="14" defence="10" image="@drawable/card_brambeidaineth_champion_of_dragons" bleed="true" luck="false"/>
     <card id="22" name="jonjon" type="john" attack="3" defence="1" image="@drawable/card_jonjon" bleed="false" luck="false"/>
     <card id="23" name="jhonson" type="john" attack="4" defence="2" image="@drawable/card_johnson" bleed="false" luck="false"/>

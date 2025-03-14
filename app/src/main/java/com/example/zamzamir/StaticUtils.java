@@ -96,7 +96,38 @@ public class StaticUtils {
 		return shuffle;
 	}
 
+	/** Randomly creates a player order based on given player count. */
+	public static List<Integer> createPlayerOrder(int playerCount) {
+		{
+			Card.resetDeck();
+
+			// Create an array containing indexes from 0 to card count
+			List<Integer> shuffle = new ArrayList<>();
+			for (int i = 0; i < playerCount; i++)
+				shuffle.add(i);
+
+			// Shuffle the indexes
+			for (int i = 0; i < playerCount; i++) {
+				int temp = shuffle.get(i);
+				int oIndex = (int)(Math.random()*playerCount);
+				shuffle.set(i, shuffle.get(oIndex));
+				shuffle.set(oIndex, temp);
+			}
+
+			return shuffle;
+		}
+	}
+
 	public static PointF lerp(PointF a, PointF b, float progress) {
 		return new PointF(a.x*(1-progress) + b.x*progress, a.y*(1-progress) + b.y*progress);
+	}
+
+	public static <T> List<T> applyShuffle(List<T> original, List<Integer> shuffle) {
+		List<T> list = new ArrayList<>();
+		for (int i : shuffle) {
+			T element = original.get(i);
+			list.add(element);
+		}
+		return list;
 	}
 }

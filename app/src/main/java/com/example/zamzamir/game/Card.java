@@ -9,6 +9,8 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 
+import com.example.zamzamir.StaticUtils;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,7 +21,7 @@ public class Card extends Point {
 
 	private static Paint borderPaint;
 
-	public static final int WIDTH = 156, HEIGHT = 220;
+	public static final int WIDTH = 117, HEIGHT = 165;
 
 	public static Bitmap back;
 	public static Bitmap fullBackSprite;
@@ -45,6 +47,8 @@ public class Card extends Point {
 
 	private int xOffset = 0;
 
+	public float angle = 0;
+
 	public Card(Bitmap sprite, int attackValue, int defenceValue) {
 		this.fullSprite = sprite;
 		this.sprite = Bitmap.createScaledBitmap(sprite, WIDTH, HEIGHT, false);
@@ -59,8 +63,10 @@ public class Card extends Point {
 
 	/** Draws the card on the screen.*/
 	public void draw(Canvas canvas) {
-		canvas.drawRect(x + xOffset, y, x + activeSprite.getWidth() + xOffset, y + HEIGHT, borderPaint);
+		canvas.rotate(angle, x + xOffset + WIDTH/2f, y + HEIGHT/2f);
+		canvas.drawRect(x + xOffset, y, x + WIDTH + xOffset, y + HEIGHT, borderPaint);
 		canvas.drawBitmap(activeSprite, x + xOffset, y, null);
+		canvas.rotate(-angle, x + xOffset + WIDTH/2f, y + HEIGHT/2f);
 	}
 
 	public boolean isRevealed() {
@@ -153,9 +159,8 @@ public class Card extends Point {
 	public static void shuffle(List<Integer> shuffle) {
 		discardPile.clear();
 		deck.clear();
-		for (int i : shuffle) {
-			Card card = cards.get(i);
-			deck.add(card);
+		deck.addAll(StaticUtils.applyShuffle(cards, shuffle));
+		for (Card card : deck) {
 			card.setRevealed(false);
 			card.setOwner(DECK);
 			card.setActiveSprite(back);
@@ -170,6 +175,7 @@ public class Card extends Point {
 	/** Adds a card to the discard pile. */
 	public static void discard(int delay, GameView gameView, Animation.AnimationManager animationManager, Card card) {
 		card.owner = DISCARD_PILE;
+		card.angle = 0;
 		discardPile.add(0, card);
 
 		if (!card.isRevealed())

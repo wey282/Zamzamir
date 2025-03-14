@@ -1,7 +1,9 @@
 package com.example.zamzamir;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.os.Bundle;
+import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.activity.EdgeToEdge;
@@ -27,7 +29,9 @@ public class MainActivity extends AppCompatActivity {
 	private CollectionReference WAITING_ROOM;
 
 	private GameUser user;
+
 	private TextView nameTextView;
+	private Button playButton;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -51,7 +55,10 @@ public class MainActivity extends AppCompatActivity {
 	/** Adds the appropriate click listener to all buttons. */
 	private void initializeButtons() {
 		findViewById(R.id.signoutButton).setOnClickListener(v -> signOut());
-		findViewById(R.id.playButton).setOnClickListener(v -> findRoom());
+		playButton = findViewById(R.id.playButton);
+		playButton.setEnabled(false);
+		playButton.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.disabled_button)));
+		playButton.setOnClickListener(v -> findRoom());
 	}
 
 	/** Initializes all the collection references. */
@@ -122,6 +129,8 @@ public class MainActivity extends AppCompatActivity {
 
 	/** Method called upon finding current user's info, sets user accordingly. */
 	private void onGetUser(DocumentSnapshot documentSnapshot) {
+		playButton.setEnabled(true);
+		playButton.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.enabled_button)));
 		user = documentSnapshot.toObject(GameUser.class);
 		assert user != null;
 		nameTextView.setText(user.getUsername());

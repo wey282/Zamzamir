@@ -12,13 +12,13 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
 import com.example.zamzamir.R;
+import com.example.zamzamir.authentication.GameUser;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 
@@ -44,6 +44,10 @@ public class GameView extends View {
 	private Paint targetedPaint;
 	private Paint discardPillePaint;
 	private TextPaint rollPaint;
+	private TextPaint activeUserPaint;
+	private TextPaint userPaint;
+	private TextPaint deadUserPaint;
+
 
 	private Button skipButton;
 	private Button attackButton;
@@ -59,6 +63,7 @@ public class GameView extends View {
 
 	private int rank = 4;
 	private Consumer<Integer> showGameEndScreen;
+	private Runnable startTurnTimer, endTurnTimer;
 
 	private Animation.AnimationManager animationManager;
 
@@ -68,6 +73,8 @@ public class GameView extends View {
 
 	private Battle lastBattle;
 	private boolean viewingLastBattle = false;
+
+	private List<GameUser> users;
 
 	public GameView(Context context) {
 		super(context);
@@ -108,6 +115,14 @@ public class GameView extends View {
 		rollPaint.setColor(getColor(R.color.roll_text));
 		rollPaint.setTextSize(200);
 
+		activeUserPaint = new TextPaint();
+		activeUserPaint.setTextSize(50);
+		activeUserPaint.setColor(getColor(R.color.current_player));
+		userPaint = new TextPaint(activeUserPaint);
+		userPaint.setColor(getColor(R.color.player));
+		deadUserPaint = new TextPaint(activeUserPaint);
+		deadUserPaint.setColor(getColor(R.color.dead_player));
+
 		animationManager = new Animation.AnimationManager(this);
 	}
 
@@ -119,6 +134,9 @@ public class GameView extends View {
 		HEIGHT = h;
 
 		if (started) {
+			if (player == currentPlayer)
+				startTurnTimer.run();
+
 			dealCards();
 
 			invalidate();
@@ -126,9 +144,6 @@ public class GameView extends View {
 	}
 
 	private boolean onTouch(View view, MotionEvent event) {
-		viewingLastBattle = false;
-		if (drawnCard == null)
-			showButtons();
 		if (currentPlayer == player) {
 			if (event.getAction() == MotionEvent.ACTION_DOWN) {
 				Card card = Card.checkTouchForAllCards(event.getX(), event.getY());
@@ -188,19 +203,38 @@ public class GameView extends View {
 			discardPileSelected = false;
 		}
 		selectedCard = Card.checkTouchForKnownCards(event.getX(), event.getY(), player);
+
+		if (viewingLastBattle) {
+			if (inAttackerCard(event.getX(), event.getY()))
+				selectedCard = lastBattle.getAttacker();
+			else if (inDefenderCard(event.getX(), event.getY()))
+				selectedCard = lastBattle.getDefender();
+			else {
+				viewingLastBattle = false;
+				showButtons();
+			}
+		}
+
 		invalidate();
 		return true;
 	}
 
-	public void start(int playerCount, int player, Button skipButton, Button attackButton, Button lastBattleButton, DocumentReference lastTurnReference, Consumer<Integer> showGameEndScreen)
+	/** Starts the game. Initializes values retrieved from Firebase. */
+	public void start(List<GameUser> users, int player,
+	                  Button skipButton, Button attackButton, Button lastBattleButton,
+	                  DocumentReference lastTurnReference,
+	                  Consumer<Integer> showGameEndScreen,
+	                  Runnable startTurnTimer,
+	                  Runnable endTurnTimer)
 	{
 		Card.player = player;
 
 		players = new ArrayList<>();
-		for (int i = 0; i < playerCount; i++) {
+		for (int i = 0; i < users.size(); i++) {
 			players.add(new ArrayList<>());
 		}
-		rank = playerCount;
+
+		this.users = users;
 
 		this.player = player;
 
@@ -217,10 +251,15 @@ public class GameView extends View {
 		this.lastTurnReference = lastTurnReference;
 
 		this.showGameEndScreen = showGameEndScreen;
+		this.startTurnTimer = startTurnTimer;
+		this.endTurnTimer = endTurnTimer;
 
 		started = true;
 
 		if (sizeInitiated) {
+			if (player == currentPlayer)
+				startTurnTimer.run();
+
 			dealCards();
 
 			invalidate();
@@ -289,12 +328,21 @@ public class GameView extends View {
 		canvas.drawRect(cx + (int)(Card.WIDTH*0.6), cy, cx + (int)(Card.WIDTH*0.6)+Card.WIDTH, cy+Card.HEIGHT, discardPillePaint);
 		if (deckSelected)
 			canvas.drawRect(getDeckPosition().x, getDeckPosition().y, getDeckPosition().x + Card.WIDTH, getDeckPosition().y + Card.HEIGHT, highlightPaint);
-		if (selectedCard != null)
+		if (selectedCard != null) {
+			canvas.rotate(selectedCard.angle, selectedCard.x + Card.WIDTH/2f, selectedCard.y + Card.HEIGHT/2f);
 			canvas.drawRect(selectedCard.x, selectedCard.y, selectedCard.x + Card.WIDTH, selectedCard.y + Card.HEIGHT, highlightPaint);
-		if (confirmedCard != null)
+			canvas.rotate(-selectedCard.angle, selectedCard.x + Card.WIDTH/2f, selectedCard.y + Card.HEIGHT/2f);
+		}
+		if (confirmedCard != null) {
+			canvas.rotate(confirmedCard.angle, confirmedCard.x + Card.WIDTH/2f, confirmedCard.y + Card.HEIGHT/2f);
 			canvas.drawRect(confirmedCard.x, confirmedCard.y, confirmedCard.x + Card.WIDTH, confirmedCard.y + Card.HEIGHT, confirmedPaint);
-		if (targetCard != null)
+			canvas.rotate(-confirmedCard.angle, confirmedCard.x + Card.WIDTH/2f, confirmedCard.y + Card.HEIGHT/2f);
+		}
+		if (targetCard != null) {
+			canvas.rotate(targetCard.angle, targetCard.x + Card.WIDTH/2f, targetCard.y + Card.HEIGHT/2f);
 			canvas.drawRect(targetCard.x, targetCard.y, targetCard.x + Card.WIDTH, targetCard.y + Card.HEIGHT, targetedPaint);
+			canvas.rotate(-targetCard.angle, targetCard.x + Card.WIDTH/2f, targetCard.y + Card.HEIGHT/2f);
+		}
 
 		// draw deck
 		if (!Card.deck.isEmpty())
@@ -308,13 +356,27 @@ public class GameView extends View {
 		}
 
 
-		// draw player's cards
+		// draw player's and names
 		for (int i = 0; i < players.size(); i++) {
+			// draw cards
 			List<Card> player = players.get(i);
 			for (int j = 0; j < player.size(); j++) {
 				Card card = player.get(j);
 				card.draw(canvas);
 			}
+
+			// draw name
+			PointF p = getNamePosition(i);
+			TextPaint paint;
+
+			if (i == currentPlayer)
+				paint = activeUserPaint;
+			else if (player.isEmpty())
+				paint = deadUserPaint;
+			else
+				paint = userPaint;
+
+			canvas.drawText(users.get(i).getUsername(), p.x, p.y, paint);
 		}
 		// show resized selected card
 		if (selectedCard != null) {
@@ -428,6 +490,7 @@ public class GameView extends View {
 					new Animation.CardFlipAnimation(animationManager, 200, card);
 				new Animation.CardMoveAnimation(animationManager, 200, card, new PointF(getDeckPosition()), new PointF(getCardPosition(turn.getPlayer(), turn.getSelectedCard(), player.size())));
 				card.setAttackPosition(getAttackPosition(turn.getPlayer(), turn.getSelectedCard(), player.size()));
+				card.angle = calculateAngle(turn.getPlayer());
 				break;
 			case Turn.RECEIVE:
 				addCardToPlayer(turn.getPlayer(), turn.getFrom());
@@ -436,7 +499,7 @@ public class GameView extends View {
 			case Turn.ATTACK:
 				Card attacker = players.get(turn.getPlayer()).get(turn.getSelectedCard());
 				Card defender = players.get(turn.getTargetPlayer()).get(turn.getTargetCard());
-				Animation.AttackAnimation.play(animationManager, 0, attacker, defender);
+				Animation.AttackAnimation.play(animationManager, 0, attacker, defender, turn.getAttackerRoll(), turn.getDefenderRoll());
 				if (attacker.getAttackValue() + turn.getAttackerRoll() >= defender.getDefenceValue() + turn.getDefenderRoll()) {
 					Card.discard(Animation.AttackAnimation.totalLength, this, animationManager, players.get(turn.getTargetPlayer()).remove(turn.getTargetCard()));
 					sortCards(turn.getTargetPlayer(), Animation.AttackAnimation.totalLength + Animation.CardMoveAnimation.length);
@@ -445,7 +508,6 @@ public class GameView extends View {
 					Card.discard(Animation.AttackAnimation.totalLength, this, animationManager, players.get(turn.getPlayer()).remove(turn.getSelectedCard()));
 					sortCards(turn.getPlayer(), Animation.AttackAnimation.totalLength + Animation.CardMoveAnimation.length);
 				}
-				Toast.makeText(getContext(), "Atk: " + turn.getAttackerRoll() + ", Def: " + turn.getDefenderRoll(), Toast.LENGTH_LONG).show();
 				if (this.player == turn.getPlayer() || this.player == turn.getTargetPlayer()) {
 					lastBattleButton.setVisibility(VISIBLE);
 					lastBattle = new Battle(attacker, defender, turn.getAttackerRoll(), turn.getDefenderRoll());
@@ -472,6 +534,8 @@ public class GameView extends View {
 		deckSelected = false;
 		discardPileSelected = false;
 		if (player == currentPlayer) {
+			startTurnTimer.run();
+
 			if (players.get(player).isEmpty()) {
 				noTurn();
 			}
@@ -479,11 +543,13 @@ public class GameView extends View {
 				skipped = false;
 				receiveCard();	
 			}
-			else {
+			else if (players.get(player).size() < 5){
 				enableSkipButton();
 			}
 		}
 		else {
+			if (currentPlayer-1 % players.size() == player)
+				endTurnTimer.run();
 			disableButtons();
 		}
 		invalidate();
@@ -550,15 +616,24 @@ public class GameView extends View {
 
 	public Point getCardPosition(int player, int card, int handSize) {
 		double angle = Math.PI*2*(player-this.player)/players.size()+Math.PI/2;
-		return new Point(WIDTH/2 - Card.WIDTH/2 + (int)(Math.cos(angle)*Card.HEIGHT*1.6)
-				   + (int)((card - handSize/2.0 + 0.5) * Card.WIDTH * 1.5),
-					HEIGHT/2 - Card.HEIGHT/2 + (int)(Math.sin(angle)*Card.HEIGHT*1.6));
+		return new Point(WIDTH/2 - Card.WIDTH/2 + (int)(Math.cos(angle)*Card.HEIGHT*1.7)
+				    + (int)((card - handSize/2.0 + 0.5) * Card.WIDTH * 1.5*Math.sin(angle)),
+					     HEIGHT/2 - Card.HEIGHT/2 + (int)(Math.sin(angle)*Card.HEIGHT*1.7)
+				    - (int)((card - handSize/2.0 + 0.5) * Card.WIDTH * 1.5*Math.cos(angle)));
 	}
+
 	private PointF getAttackPosition(int player, int card, int handSize) {
 		double angle = Math.PI*2*(player-this.player)/players.size()+Math.PI/2;
-		return new PointF(WIDTH/2f - Card.WIDTH/2f + (int)(Math.cos(angle)*Card.HEIGHT*1.6)
-				+ (int)((card - handSize/2.0 + 0.5) * Card.WIDTH * 1.5),
-				HEIGHT/2f - Card.HEIGHT/2f + (int)(Math.sin(angle)*Card.HEIGHT*0.6));
+		return new PointF(WIDTH/2f - Card.WIDTH/2f + (int)(Math.cos(angle)*Card.HEIGHT*0.7)
+					 + (int)((card - handSize/2.0 + 0.5) * Card.WIDTH * 1.5*Math.sin(angle)),
+				          HEIGHT/2f - Card.HEIGHT/2f + (int)(Math.sin(angle)*Card.HEIGHT*0.7)
+					 - (int)((card - handSize/2.0 + 0.5) * Card.WIDTH * 1.5*Math.cos(angle)));
+	}
+
+	private PointF getNamePosition(int player) {
+		double angle = Math.PI*2*(player-this.player)/players.size()+Math.PI/2;
+		return new PointF(WIDTH/2f - Card.WIDTH/2f + (int)(Math.cos(angle)*Card.HEIGHT*2.7),
+				HEIGHT/2f - Card.HEIGHT/2f + (int)(Math.sin(angle)*Card.HEIGHT*2.7) + 100);
 	}
 
 	/**
@@ -602,7 +677,14 @@ public class GameView extends View {
 
 		card.setAttackPosition(getAttackPosition(player, cardIndex, handSize));
 
+		card.angle = calculateAngle(player);
+
 		return card;
+	}
+
+	/** Returns the angle of cards of given player in degrees. */
+	private float calculateAngle(int player) {
+		return 360f*(player-this.player)/players.size();
 	}
 
 	/** Order given players cards. */
@@ -620,5 +702,28 @@ public class GameView extends View {
 		viewingLastBattle = true;
 		hideButtons();
 		invalidate();
+	}
+
+	/** Checks whether the coordinate is inside the preview of the attacker card. */
+	private boolean inAttackerCard(float x, float y) {
+		Bitmap attacker = lastBattle.getAttacker().getFullSprite();
+		return x > 20 && x < 20 + attacker.getWidth()
+			&& y > HEIGHT/2f-attacker.getHeight()/2f && y < HEIGHT/2f+attacker.getHeight()/2f;
+	}
+
+	/** Checks whether the coordinate is inside the preview of the attacker card. */
+	private boolean inDefenderCard(float x, float y) {
+		Bitmap defender = lastBattle.getDefender().getFullSprite();
+		return x > WIDTH-20-defender.getWidth() && x < WIDTH-20
+				&& y > HEIGHT/2f-defender.getHeight()/2f && y < HEIGHT/2f+defender.getHeight()/2f;
+	}
+
+	/** Makes the player lose if they ran out of time for the turn. */
+	public void onTurnTimeEnd() {
+		for (Card card: players.get(player)) {
+			Card.discard(this, animationManager, card);
+		}
+		players.get(player).clear();
+		lastTurnReference.set(Turn.emptyTurn(player));
 	}
 }

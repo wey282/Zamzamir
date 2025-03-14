@@ -91,6 +91,7 @@ public class LoadingActivity extends AppCompatActivity {
 			parser.close();
 
 			Animation.explosionSpriteSheet = BitmapFactory.decodeResource(getResources(), R.drawable.explosion_sprite_sheet);
+			loadDiceRollSheets();
 
 			Log.d("banana", "loadCards: " + Card.deck.size());
 
@@ -98,5 +99,18 @@ public class LoadingActivity extends AppCompatActivity {
 		} catch (Exception e) {
 			Log.e("banana", e.getMessage() + "\n" + e.getCause());
 		}
+	}
+
+	private void loadDiceRollSheets() {
+		Animation.diceRollSpriteSheets = new Bitmap[8];
+		Animation.diceRollSpriteSheets[0] = BitmapFactory.decodeResource(getResources(), R.drawable.dice_roll_2);
+		Animation.diceRollSpriteSheets[1] = BitmapFactory.decodeResource(getResources(), R.drawable.dice_roll_6);
+		Animation.diceRollSpriteSheets[2] = BitmapFactory.decodeResource(getResources(), R.drawable.dice_roll_5);
+		Animation.diceRollSpriteSheets[3] = BitmapFactory.decodeResource(getResources(), R.drawable.dice_roll_1);
+		Animation.diceRollSpriteSheets[4] = BitmapFactory.decodeResource(getResources(), R.drawable.dice_roll_4);
+		Animation.diceRollSpriteSheets[5] = BitmapFactory.decodeResource(getResources(), R.drawable.dice_roll_6_2);
+		Animation.diceRollSpriteSheets[6] = BitmapFactory.decodeResource(getResources(), R.drawable.dice_roll_3);
+		Animation.diceRollSpriteSheets[7] = BitmapFactory.decodeResource(getResources(), R.drawable.dice_roll_1);
+
 	}
 }

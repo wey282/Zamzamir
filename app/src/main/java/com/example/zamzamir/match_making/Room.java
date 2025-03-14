@@ -1,8 +1,8 @@
 package com.example.zamzamir.match_making;
 
 public class Room {
-	boolean full = true;
-	int ready = 0;
+	private boolean full = true;
+	private float remainingTime = 1000000;
 
 	public Room() {}
 
@@ -18,7 +18,11 @@ public class Room {
 		return full;
 	}
 
-	public int getReady() {
-		return ready;
+	public float getRemainingTime() {
+		return remainingTime;
+	}
+
+	public void setRemainingTime(float remainingTime) {
+		this.remainingTime = remainingTime;
 	}
 }

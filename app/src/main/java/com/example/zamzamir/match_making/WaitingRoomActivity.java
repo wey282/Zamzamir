@@ -2,7 +2,7 @@ package com.example.zamzamir.match_making;
 
 import android.content.res.ColorStateList;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.SystemClock;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -28,32 +28,35 @@ import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 
 public class WaitingRoomActivity extends AppCompatActivity {
 
-	private static final int UNINITIALIZED_VALUE = -1;
+	private static final int timePerPlayerInSeconds = 10;
 
 	private final FirebaseFirestore DB = FirebaseFirestore.getInstance();
 	private DocumentReference roomDocument;
 	private CollectionReference playersReference;
+	private CollectionReference readyReference;
 	private ListenerRegistration roomListener;
 	private ListenerRegistration playersListener;
+	private ListenerRegistration readyListener;
 
 	private TextView[] playersTextViews;
+	private TextView timeRemainingTextView;
 	private Button readyButton;
 
-	private boolean ready = false;
+	private final Ready ready = new Ready();
 	private boolean host = false;
 
 	private Room room;
+
+	private List<GameUser> players;
 
 	private int playerCount;
 
 	private boolean started;
 
-	// Which is the player is the current user
-	private int player = UNINITIALIZED_VALUE;
+	private String playerId;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +73,9 @@ public class WaitingRoomActivity extends AppCompatActivity {
 
 		readyButton.setOnClickListener(this::onReady);
 
+		// Find player's id
+		playerId = FirebaseAuth.getInstance().getUid();
+
 		String roomID = getIntent().getStringExtra(getString(R.string.room_id_extra));
 		assert roomID != null;
 		roomDocument = DB.collection(getString(R.string.waiting_room_collection)).document(roomID);
@@ -78,6 +84,10 @@ public class WaitingRoomActivity extends AppCompatActivity {
 		// Listen for changes in the players
 		playersReference = roomDocument.collection(getString(R.string.players_in_room));
 		playersListener = playersReference.addSnapshotListener(this::onPlayerChange);
+		readyReference = roomDocument.collection(getString(R.string.ready_in_room));
+		readyListener = readyReference.addSnapshotListener(this::onReadyChange);
+		readyReference.document(playerId).set(ready);
+
 
 	}
 
@@ -90,30 +100,36 @@ public class WaitingRoomActivity extends AppCompatActivity {
 		playersTextViews[3] = findViewById(R.id.player4TextView);
 
 		readyButton = findViewById(R.id.readyButton);
+
+		timeRemainingTextView = findViewById(R.id.remainingTimeTextView);
 	}
 
 	/** Triggers when the ready button is clicked.
 	 *  Updates the ready players count and changes ready buttons text. */
 	private void onReady(View view) {
-		ready = !ready;
-		if (ready) {
+		ready.flip();
+		if (ready.isReady()) {
 			readyButton.setText(R.string.unready_text);
-			room.ready++;
 		}
 		else {
-			readyButton.setText(R.string.ready_text);
-			room.ready--;
+			readyButton.setText(R.string.ready_text);;
 		}
-		roomDocument.set(room);
+		readyReference.document(playerId).set(ready);
 	}
 
 	/** Updates room object and starts the game if enough players are ready. */
 	private void onRoomChange(DocumentSnapshot room, FirebaseFirestoreException exception) {
 		if (room != null && !started) {
 			this.room = room.toObject(Room.class);
-			int readyCount = this.room != null ? this.room.ready : 0;
-			if (readyCount == playerCount && playerCount > 1) {
-				startGame();
+
+			if (this.room != null && this.room.getRemainingTime() < 30) {
+				timeRemainingTextView.post(() -> {
+					timeRemainingTextView.setVisibility(View.VISIBLE);
+					timeRemainingTextView.setText(getString(R.string.int_text, Math.round(this.room.getRemainingTime())));
+				});
+			}
+			else  {
+				timeRemainingTextView.post(() -> timeRemainingTextView.setVisibility(View.GONE));
 			}
 		}
 	}
@@ -123,40 +139,84 @@ public class WaitingRoomActivity extends AppCompatActivity {
 			roomDocument.delete();
 		if (playersSnapshot == null || started)
 			return;
-		List<GameUser> players = playersSnapshot.toObjects(GameUser.class);
+		players = playersSnapshot.toObjects(GameUser.class);
 		playerCount = players.size();
 
+		room.setRemainingTime(timePerPlayerInSeconds*(5-players.size()));
 
-		if (player == UNINITIALIZED_VALUE)
-			player = playerCount - 1;
-
-		if (players.size() == 1) {
+		if (playerCount == 1) {
 			host = true;
 			readyButton.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.disabled_button)));
 			readyButton.setEnabled(false);
+			decreaseRemainingTime();
 		}
 		else {
 			readyButton.setBackgroundTintList(ColorStateList.valueOf(getColor(R.color.enabled_button)));
 			readyButton.setEnabled(true);
 		}
 		for (int i = 0; i < 4; i++) {
-			if (players.size()-1 < i)
+			if (playerCount-1 < i)
 				playersTextViews[i].setText("");
 			else
 				playersTextViews[i].setText(players.get(i).getUsername());
 		}
 	}
 
+	private void decreaseRemainingTime() {
+		new Thread(() -> {
+			long prevTime, time = System.currentTimeMillis();
+
+			while (!started && room.getRemainingTime() > 0) {
+				prevTime = time;
+				time = System.currentTimeMillis();
+				if (room.getRemainingTime() <= 3*timePerPlayerInSeconds) {
+					room.setRemainingTime(room.getRemainingTime() - (time - prevTime) / 1000f);
+					roomDocument.set(room);
+				}
+				SystemClock.sleep(100);
+			}
+
+			if (!started) {
+				for (GameUser user: players) {
+					readyReference.document(user.getId()).set(new Ready(true));
+				}
+			}
+
+		}).start();
+	}
+
+	private void onReadyChange(QuerySnapshot documentSnapshots, FirebaseFirestoreException exception) {
+		if (documentSnapshots == null)
+			return;
+
+		List<Ready> readyList = documentSnapshots.toObjects(Ready.class);
+
+		int readyCount = 0;
+
+		for (int i = 0; i < readyList.size(); i++) {
+			if (readyList.get(i).isReady()) {
+				playersTextViews[i].setTextColor(getColor(R.color.ready_text));
+				readyCount++;
+			}
+			else
+				playersTextViews[i].setTextColor(getColor(R.color.unready_text));
+		}
+
+		if (playerCount > 1 && readyCount == playerCount)
+			startGame();
+	}
+
 	@Override
 	protected void onStop() {
 		roomListener.remove();
 		playersListener.remove();
+		readyListener.remove();
 		if (!isChangingConfigurations() && !started) {
-			if (room != null && ready) {
-				room.ready--;
+			readyReference.document(playerId).delete();
+			if (room != null && ready.isReady()) {
 				roomDocument.set(room);
 			}
-			playersReference.document(Objects.requireNonNull(FirebaseAuth.getInstance().getUid())).delete();
+			playersReference.document(playerId).delete();
 			if (playerCount <= 1) {
 				roomDocument.delete();
 			}
@@ -174,15 +234,21 @@ public class WaitingRoomActivity extends AppCompatActivity {
 			game.set(new GameRoom(playerCount));
 		}
 
+		for (GameUser user : players) {
+			game.collection(getString(R.string.players_in_room)).add(user);
+
+			playersReference.document(user.getId()).delete();
+			readyReference.document(user.getId()).delete();
+		}
+
 		// Create relevant extras
 		HashMap<String, String> extras = new HashMap<>();
 		extras.put(getString(R.string.room_id_extra), roomDocument.getId());
-		extras.put(getString(R.string.current_player_extra), Integer.toString(player));
+		extras.put(getString(R.string.player_id_extra), playerId);
+		extras.put(getString(R.string.host), Boolean.toString(host));
 
 		// Start game activity
 		StaticUtils.moveActivity(this, GameActivity.class, extras);
-
-		playersReference.document(FirebaseAuth.getInstance().getUid()).delete();
 
 		// Stop this activity
 		finish();

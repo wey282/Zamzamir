@@ -7,13 +7,14 @@ import java.util.List;
 public class GameRoom {
 	private int playerCount;
 	private List<Integer> shuffle;
+	private List<Integer> order;
 
 	public GameRoom() {}
-
 
 	public GameRoom(int playerCount) {
 		this.playerCount = playerCount;
 		this.shuffle = StaticUtils.createShuffle();
+		this.order = StaticUtils.createPlayerOrder(playerCount);
 	}
 
 	public int getPlayerCount() {
@@ -22,5 +23,9 @@ public class GameRoom {
 
 	public List<Integer> getShuffle() {
 		return shuffle;
+	}
+
+	public List<Integer> getOrder() {
+		return order;
 	}
 }

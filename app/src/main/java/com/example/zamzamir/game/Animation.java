@@ -1,12 +1,12 @@
 package com.example.zamzamir.game;
 
 import android.graphics.Bitmap;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageView;
 
 import androidx.annotation.VisibleForTesting;
 
@@ -32,6 +32,7 @@ public abstract class Animation {
 	private Runnable onFinish;
 
 	public static Bitmap explosionSpriteSheet;
+	public static Bitmap[] diceRollSpriteSheets;
 
 	public Animation(AnimationManager manager, int delay, int length) {
 		start = System.currentTimeMillis()+delay;
@@ -179,11 +180,13 @@ public abstract class Animation {
 		public static final int retreatLength = 600;
 		public static final int totalLength = attackLength + stayLength + retreatLength;
 
-		public static void play(AnimationManager manager, int delay, Card attacker, Card attacked) {
+		public static void play(AnimationManager manager, int delay, Card attacker, Card attacked, int attackerRoll, int attackedROll) {
 			PointF start = new PointF(attacker);
 			new CardMoveAnimation(manager, delay, attackLength, attacker, start, attacked.getAttackPosition()).setOnFinish(() ->
 					new CardMoveAnimation(manager, stayLength, retreatLength, attacker, new PointF(attacker), start));
-			new FromSpriteSheet(manager, attackLength, 50*11, 11, explosionSpriteSheet, new ImageObject(null, (int)attacked.getAttackPosition().x-64-Card.WIDTH/2, (int)attacked.getAttackPosition().y-64+(attacked.getAttackPosition().y<attacked.y ? Card.HEIGHT/2 : -Card.HEIGHT/2)));
+			new FromSpriteSheet(manager, attackLength, 50*11, 11, explosionSpriteSheet, new ImageObject(null, (int)attacked.getAttackPosition().x-64-Card.WIDTH/2, (int)attacked.getAttackPosition().y-64+(attacked.getAttackPosition().y<attacked.y ? Card.HEIGHT/2 : -Card.HEIGHT/2)), 0);
+			DiceRollAnimation.play(manager, attackLength, attacker, attackerRoll);
+			DiceRollAnimation.play(manager, attackLength, attacked, attackedROll);
 		}
 	}
 
@@ -200,8 +203,12 @@ public abstract class Animation {
 
 		private final ImageObject display;
 
-		public FromSpriteSheet(AnimationManager manager, int delay, int length, int frames, Bitmap source, ImageObject display) {
-			super(manager, delay, length);
+		private final long startTime;
+		private final int length;
+		private final int deleteDelay;
+
+		public FromSpriteSheet(AnimationManager manager, int delay, int length, int frames, Bitmap source, ImageObject display, int deleteDelay) {
+			super(manager, delay, length + deleteDelay);
 
 			bitmaps = new Bitmap[frames];
 
@@ -214,6 +221,10 @@ public abstract class Animation {
 				bitmaps[i] = Bitmap.createBitmap(source, rect.left, rect.top, rect.right-rect.left, rect.bottom-rect.top);
 			}
 
+			this.length = length;
+			this.deleteDelay = deleteDelay;
+			this.startTime = System.currentTimeMillis() + delay;
+
 			setOnFinish(display::delete);
 		}
 
@@ -222,9 +233,37 @@ public abstract class Animation {
 			if (!super.play(delta))
 				return false;
 
-			display.setBitmap(bitmaps[(int)Math.min(bitmaps.length*progress, bitmaps.length-1)]);
+			progress = (float) (curTime-startTime) / length;
+			display.setBitmap(bitmaps[(int)Math.max(Math.min(bitmaps.length*progress, bitmaps.length-1), 0)]);
 
 			return true;
+		}
+	}
+
+	// order: 2, 6, 5, 1, 4, x6, 3, x1
+	public static class DiceRollAnimation {
+		private static final int[] order = {2, 6, 5, 1, 4, 6, 3, 1};
+
+		public static void play(AnimationManager manager, int delay, Point position, int roll) {
+			int repetitions = (int)(Math.random()*2);
+			int length = 4 * 75;
+			for (int i = 0; i < repetitions; i++) {
+				for (int j = 0; j < 8; j++) {
+					new Animation.FromSpriteSheet(manager, delay + length*(8*i+j), length, 4, diceRollSpriteSheets[j], new ImageObject(null, position.x, position.y), 0);
+				}
+			}
+			int secondRepetitions = calculateRepetitionsForRoll(roll);
+			for (int i = 0; i < secondRepetitions; i++) {
+				new Animation.FromSpriteSheet(manager, delay + length*(repetitions*8+i), length, 4, diceRollSpriteSheets[i], new ImageObject(null, position.x, position.y), i == secondRepetitions-1 ? 2500 : 0);
+			}
+		}
+
+		private static int calculateRepetitionsForRoll(int roll) {
+			for (int i = 0; i < 8; i++) {
+				if (order[i] == roll)
+					return i+1;
+			}
+			return 0;
 		}
 	}
 

@@ -7,9 +7,14 @@
     <string name="full">full</string>
     <string name="sign_up">Sign up</string>
     <string name="players_in_room">Players</string>
+    <string name="ready_in_room">Ready</string>
     <string name="unready_text">Unready</string>
     <string name="ready_text">Ready</string>
     <string name="room_id_extra">roomID</string>
     <string name="current_player_extra">player</string>
     <string name="game_end_text_for_loser">You were #%1$d place</string>
+    <string name="host">host</string>
+    <string name="player_id_extra">playerId</string>
+    <string name="int_text">%1$d</string>
+    <string name="time_left">Time Left: %d:%02d</string>
 </resources>
